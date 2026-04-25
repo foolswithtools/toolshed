@@ -1,0 +1,17 @@
+{
+  "name": "toolshed",
+  "owner": {
+    "name": "foolswithtools",
+    "email": "claudet@ohnobono.com"
+  },
+  "metadata": {
+    "description": "A grab bag of useful Claude Code plugins. Each plugin does one job and gets out of the way."
+  },
+  "plugins": [
+    {
+      "name": "youtube-transcript",
+      "source": "./plugins/youtube-transcript",
+      "description": "Download YouTube video transcripts via yt-dlp. Saves both the original .vtt and a cleaned .txt (timestamps, cue ids, and inline tags stripped; rolling auto-sub duplicates collapsed)."
+    }
+  ]
+}
