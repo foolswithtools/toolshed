@@ -1,0 +1,5 @@
+{
+  "output_root": "./transcripts",
+  "subfolder_template": "{channel}",
+  "language": "en"
+}

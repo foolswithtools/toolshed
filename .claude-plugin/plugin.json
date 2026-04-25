@@ -1,0 +1,9 @@
+{
+  "name": "youtube-transcript",
+  "version": "0.1.0",
+  "description": "Download YouTube video transcripts via yt-dlp. Saves both the original .vtt and a cleaned .txt (timestamps, cue ids, and inline tags stripped; rolling auto-sub duplicates collapsed).",
+  "author": {
+    "name": "claudet",
+    "email": "claudet@ohnobono.com"
+  }
+}
