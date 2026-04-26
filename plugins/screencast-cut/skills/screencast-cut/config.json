@@ -1,0 +1,12 @@
+{
+  "idle_threshold_speedramp_seconds": 2,
+  "idle_threshold_cut_seconds": 8,
+  "speedramp_factor": 4,
+  "default_intro_frames": 45,
+  "default_outro_frames": 60,
+  "caption_style": "auto",
+  "fps": 30,
+  "agg_theme": "monokai",
+  "agg_font_size": 14,
+  "whisper_model": "base.en"
+}

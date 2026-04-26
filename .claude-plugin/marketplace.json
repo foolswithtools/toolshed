@@ -17,6 +17,11 @@
       "name": "remotion-video",
       "source": "./plugins/remotion-video",
       "description": "Prompt-driven motion-graphics video creation with Remotion. Plans the video beat-by-beat, builds scenes with screenshot verification, iterates in Studio preview, renders to MP4. Maintains a persistent brand style guide across videos."
+    },
+    {
+      "name": "screencast-cut",
+      "source": "./plugins/screencast-cut",
+      "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them, transcribes audio with Whisper for word-level captions, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile so output matches the rest of your videos."
     }
   ]
 }
