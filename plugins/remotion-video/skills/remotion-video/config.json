@@ -1,0 +1,9 @@
+{
+  "output_root": "./videos-studio",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "install_official_skills": true,
+  "auto_start_studio": true,
+  "screenshot_scale": 0.25
+}

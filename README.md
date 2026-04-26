@@ -58,6 +58,37 @@ By default, files land in `./transcripts/<channel>/` relative to your current wo
 
 The skill auto-retries with `<language>.*` if the requested exact language isn't available.
 
+### remotion-video
+
+Prompt-driven motion-graphics video creation with [Remotion](https://www.remotion.dev/). Walks an iteration loop: plan the video beat-by-beat → build scenes (with screenshot verification after each) → preview in Remotion Studio → revise from your comments → render to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
+
+**Requirements:** `node` 18+ (`brew install node`). Remotion's renderer downloads its own Chromium on first render.
+
+**Use it:**
+
+```
+make me a 15-second launch video introducing the foolswithtools org with a glowing teal accent
+```
+
+```
+build a 9:16 vertical short explaining what a Claude Code skill is
+```
+
+The first invocation in a folder scaffolds a long-lived Remotion project under `videos-studio/` (configurable). Subsequent videos land as subfolders inside it (`videos-studio/videos/<slug>/`) and reuse the established style.
+
+**Configure** by editing `plugins/remotion-video/skills/remotion-video/config.json`:
+
+| Field                      | Default            | Notes                                                                                            |
+|----------------------------|--------------------|--------------------------------------------------------------------------------------------------|
+| `output_root`              | `./videos-studio`  | Where the long-lived Remotion project lives. Resolved against CWD.                               |
+| `fps`                      | `30`               | Frames per second for new compositions.                                                          |
+| `width` / `height`         | `1920` / `1080`    | Default composition dimensions. Override per-call ("9:16 vertical", "1:1 square", "4K").         |
+| `install_official_skills`  | `true`             | Run `npx remotion skills add` on a fresh project so Remotion's own agent skills land in `.claude/skills/`. |
+| `auto_start_studio`        | `true`             | Auto-launch `npx remotion studio` for live preview during iteration.                             |
+| `screenshot_scale`         | `0.25`             | `--scale` for `npx remotion still` PNG verification frames.                                       |
+
+The persistent brand style guide lives in `<project>/src/brand/` (`style-guide.ts` + `BRAND.md`) — the skill seeds it on first run and updates it when the user promotes a one-off element into the brand.
+
 ## Layout
 
 ```
@@ -65,15 +96,25 @@ The skill auto-retries with `<language>.*` if the requested exact language isn't
 ├── .claude-plugin/
 │   └── marketplace.json
 ├── plugins/
-│   └── youtube-transcript/
+│   ├── youtube-transcript/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json
+│   │   └── skills/
+│   │       └── youtube-transcript/
+│   │           ├── SKILL.md
+│   │           ├── config.json
+│   │           └── scripts/
+│   │               └── vtt_to_text.py
+│   └── remotion-video/
 │       ├── .claude-plugin/
 │       │   └── plugin.json
 │       └── skills/
-│           └── youtube-transcript/
+│           └── remotion-video/
 │               ├── SKILL.md
 │               ├── config.json
-│               └── scripts/
-│                   └── vtt_to_text.py
+│               └── templates/
+│                   ├── style-guide.ts
+│                   └── BRAND.md
 ├── README.md
 └── .gitignore
 ```

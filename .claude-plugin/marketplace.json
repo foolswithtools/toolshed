@@ -12,6 +12,11 @@
       "name": "youtube-transcript",
       "source": "./plugins/youtube-transcript",
       "description": "Download YouTube video transcripts via yt-dlp. Saves both the original .vtt and a cleaned .txt (timestamps, cue ids, and inline tags stripped; rolling auto-sub duplicates collapsed)."
+    },
+    {
+      "name": "remotion-video",
+      "source": "./plugins/remotion-video",
+      "description": "Prompt-driven motion-graphics video creation with Remotion. Plans the video beat-by-beat, builds scenes with screenshot verification, iterates in Studio preview, renders to MP4. Maintains a persistent brand style guide across videos."
     }
   ]
 }
