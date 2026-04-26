@@ -8,5 +8,10 @@
   "fps": 30,
   "agg_theme": "monokai",
   "agg_font_size": 14,
-  "whisper_model": "base.en"
+  "whisper_model": "base.en",
+  "zoom_factor": 1.6,
+  "zoom_ramp_in_ms": 300,
+  "zoom_hold_ms": 1500,
+  "zoom_ramp_out_ms": 400,
+  "click_merge_window_ms": 1500
 }

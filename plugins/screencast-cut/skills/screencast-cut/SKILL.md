@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
-description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project so output style matches the rest of the user's videos.
-version: 0.1.0
+description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project so output style matches the rest of the user's videos.
+version: 0.2.0
 ---
 
 # Screencast Cut
@@ -55,6 +55,11 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/config.json`. Defaults:
 | `agg_theme` | `"monokai"` | Pass-through to `agg --theme`. |
 | `agg_font_size` | `14` | Pass-through to `agg --font-size`. |
 | `whisper_model` | `"base.en"` | ggml model name. `small.en` is more accurate, slower. |
+| `zoom_factor` | `1.6` | Scale at the peak of an auto-zoom segment. |
+| `zoom_ramp_in_ms` | `300` | Time to ramp from 1× up to `zoom_factor` before the click. |
+| `zoom_hold_ms` | `1500` | Time held at `zoom_factor` after the click. |
+| `zoom_ramp_out_ms` | `400` | Time to ramp from `zoom_factor` back to 1×. |
+| `click_merge_window_ms` | `1500` | Click anchors within this window merge into one pan segment. |
 
 User overrides per call:
 - "use the karaoke captions" / "for TikTok" → `caption_style=karaoke`.
@@ -83,6 +88,12 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
    - `.mp4` / `.mov` → screen-capture path (Phase 3b).
    - Anything else → ask the user; don't guess.
 5. If the user provided a separate audio file (`.m4a`/`.mp3`/`.wav`) for narration, note its path. If audio is embedded in the MP4, you'll extract it with ffmpeg in Phase 4.
+6. **For MP4 input, locate click-event data.** Check for any of the following alongside the MP4:
+   - A sibling `.screenize/` directory (polyrecorder-v2 package from the [Screenize](https://github.com/syi0808/screenize) recorder).
+   - A sibling `events.json` written by the user by hand (manual schema — see Phase 3b).
+   - Nothing — fall back to manual-anchor mode in Phase 3b.
+
+   **About CleanShot X specifically:** CleanShot X does *not* export click coordinates or timing. Its click highlights are rendered into the MP4 pixels, not a sidecar file. If the user supplies a CleanShot recording and expects auto-zoom on real clicks, tell them up-front: *either* re-record with a tool that exports an event stream (Screenize is one), *or* author a manual `events.json` with timestamps and approximate click positions. Computer-vision cursor tracking on raw MP4 is feasible but lands in a later slice.
 
 ### Phase 3a — Plan beats (asciinema path)
 
@@ -117,7 +128,67 @@ Wait for "approve" before writing scene code.
 
 ### Phase 3b — Plan beats (MP4 path)
 
-For now (Slice 2): not yet implemented. Tell the user "the MP4 path lands in the next slice — for this version, please use a `.cast` file." A later slice adds the MP4 input adapter, CleanShot X click-event reader, and auto-zoom planner.
+The MP4 path centers on **auto-zoom on click anchors**, with audio-driven captions over the top. Auto-zoom needs structured click data — without it, you have a video and no idea where the user pointed.
+
+#### Probe the MP4
+
+```bash
+ffprobe -v error -select_streams v:0 \
+    -show_entries stream=width,height,r_frame_rate,duration \
+    -of json "<input.mp4>"
+```
+
+Note the dimensions, fps, and duration. If the dimensions don't match the project's composition (terminals are usually 16:9; the project might be 9:16), surface this and ask whether to letterbox, center-crop, or change the composition aspect ratio for this video.
+
+#### Resolve click anchors
+
+Run the events parser if the user has a structured event source:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/parse_events.py" \
+    "<events-input>" \
+    "<project>/videos/<slug>/source/" \
+    --debounce-ms 250
+```
+
+`<events-input>` is one of:
+- A `.screenize/` package directory from Screenize (polyrecorder-v2).
+- A flat manual `events.json` the user wrote (schema below).
+
+The parser writes `<project>/videos/<slug>/source/zoom_anchors.json` with normalized 0..1 coordinates.
+
+**Manual `events.json` schema** — when the user has a CleanShot or QuickTime MP4 and wants auto-zoom, walk them through authoring this file (or generate it via AskUserQuestion if you have a frame-by-frame inspection of the video):
+
+```json
+{
+  "display": {"width_px": 1920, "height_px": 1080, "scale": 1},
+  "duration_s": 92.4,
+  "clicks": [
+    {"t_s": 12.0, "x": 0.42, "y": 0.58, "label": "open terminal"},
+    {"t_s": 31.5, "x": 0.78, "y": 0.12, "label": "click run"}
+  ]
+}
+```
+
+`x`/`y` here are normalized 0..1 (top-left origin). For users who only know pixel coordinates, give them the formula: `x = px / display.width_px`. The `label` is optional but good for chapter cards.
+
+**No click data at all?** Skip the auto-zoom layer entirely — the MP4 plays full-frame with captions over it. Tell the user that's what they're getting and offer the manual-anchor escape hatch.
+
+#### Plan beats
+
+- **Intro beat** (`default_intro_frames`) — wordmark hero from the active profile.
+- **Content beats** built from the MP4 plus zoom anchors:
+  - Default: the MP4 plays at 1× behind the active profile's caption layer.
+  - For each click anchor, plan a *zoom segment*: zoom-in starting **300ms before** the click, hold at the active zoom for **1.5s**, zoom-out **400ms** after. Use the active profile's easing presets (e.g. `easings.zoomIn`, `easings.zoomOut` if defined; else `Easing.bezier(0.4, 0, 0.2, 1)`).
+  - Zoom level: 1.6× by default (configurable via `zoom_factor` in config later). Center the zoom on the click coordinate, clamping the visible window so it doesn't drift outside the source frame.
+  - Adjacent click anchors within 1.5s of each other → merge into one zoom segment that pans between the two anchor points.
+- **Outro beat** (`default_outro_frames`) — call-to-action card from the active profile.
+
+Surface the plan as a numbered list including each click anchor's `t_s` and `label`. Use **AskUserQuestion** for:
+- "These two clicks are 800ms apart — merge into one pan, or two separate zooms?"
+- "The zoom on the click at 31.5s would clip the right edge — center it differently, reduce zoom to 1.3×, or skip the zoom?"
+
+Wait for "approve" before writing scene code.
 
 ### Phase 4 — Build scenes
 
@@ -139,12 +210,17 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
 
 3. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode. Reuse promoted components from `<project>/src/brand/profiles/<active>/components/` when applicable.
 
-   The scene shapes you'll typically need:
+   The scene shapes you'll typically need (asciinema path):
    - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener.
    - `TerminalRun.tsx` — renders the PNG sequence between two timestamps. Use `<Img src={staticFile(\`<slug>/frames/\${pad(n)}.png\`)} />` driven by current frame mapped through `frame_times_s` from `timing.json`. For speed-ramped beats, scale the time mapping by `speedramp_factor`.
    - `IdleCutCard.tsx` — the "…" placeholder for cut gaps.
    - `Captions.tsx` — reads `transcript.json`. For `caption_style="band"`, render a single line at the active word; for `karaoke`, render the segment with the active word highlighted in the profile's accent.
    - `OutroCard.tsx` — call-to-action / closing card from the active profile.
+
+   Additional scenes for the MP4 path:
+   - `ScreenPlayback.tsx` — `<OffthreadVideo src={staticFile(\`<slug>/source.mp4\`)} startFrom={...} endAt={...} />`. Copy the MP4 once into `<project>/public/<slug>/source.mp4` so `staticFile()` resolves it.
+   - `ZoomedSection.tsx` — wraps `ScreenPlayback` in a transform that interpolates `scale` from 1 → `zoom_factor` → 1 around a click anchor, with `translateX`/`translateY` set so the click point stays centered (clamp the offset so the visible window stays inside the source). Read anchor `t_s` and `x`/`y` from `zoom_anchors.json`. Use the active profile's easings.
+   - The same `Captions.tsx` used on the asciinema path works here too — `transcript.json` is the source of truth regardless of input shape.
 
 4. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` as the sum of beat durations minus transition overlaps.
 
@@ -184,12 +260,15 @@ These are the defaults the skill applies without asking. The user can override a
 
 - Idle gap >= `idle_threshold_speedramp_seconds` (default 2s) → speed-ramp at `speedramp_factor` (default 4×).
 - Idle gap >= `idle_threshold_cut_seconds` (default 8s) → hard cut, replaced with a 1s "…" beat.
+- Click anchor → zoom segment: 300ms ramp-in, 1.5s hold at `zoom_factor` (default 1.6×), 400ms ramp-out, recentered on the click point.
+- Click anchors within 1.5s of each other → merge into one pan-between-points segment.
 - Caption style:
   - `auto` + 16:9 master → `band` (clean caption bar at the bottom safe-zone).
   - `auto` + 9:16 master → `karaoke` (per-word reveal in the profile accent).
 - Default intro: 1.5s wordmark hero from the active profile.
 - Default outro: 2s call-to-action card from the active profile.
 - If the cast has zero `o` events (input-only or empty), stop and report — there's nothing to render.
+- If the MP4 has no resolvable click data (no Screenize package, no manual `events.json`), skip the auto-zoom layer and play the MP4 1× behind captions — don't fabricate zoom points from nothing.
 
 ## Error handling
 
@@ -198,6 +277,9 @@ These are the defaults the skill applies without asking. The user can override a
 - **Whisper model missing.** The `transcribe.py` script lists the paths it searched. Tell the user to download with `whisper-cli --model-download <name>` and retry.
 - **Audio drift.** If the audio duration differs from the cast duration by more than a few percent, warn the user — typically means they recorded narration separately and didn't sync. Offer to either trim audio or stretch terminal playback.
 - **No Remotion project.** Phase 1 already handles this — point the user at the `remotion-video` skill and stop, don't scaffold from here.
+- **MP4 with no event data.** Tell the user up-front. CleanShot X, QuickTime, and the macOS Screenshot app don't export click coordinates. Two paths: re-record with a tool that does (Screenize is one), or have them author a manual `events.json` from memory or by stepping through the MP4. Don't silently skip — offer the choice.
+- **`parse_events.py` formatVersion mismatch.** The polyrecorder schema is young and will move. Surface the actual `formatVersion` you got vs. the one expected and tell the user to either update their recorder or downgrade. Don't try to interpret an unknown schema version.
+- **Zoom would clip the visible window.** Pre-validate before writing scenes: for each anchor, check that a window of size `1/zoom_factor` centered on `(x, y)` stays inside `[0, 1]`. If not, ask the user (via AskUserQuestion) whether to recenter, reduce zoom, or skip that anchor.
 
 ## Notes
 
