@@ -75,11 +75,14 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
 
 **Fresh project (first run):**
 
-1. Install Remotion's official agent skills so subsequent edits in this folder follow Remotion conventions:
+1. Install Remotion's official agent skills so subsequent edits in this folder follow Remotion conventions. **Wrap the call in a timeout** — at the time of writing, this command sometimes hangs on an interactive "Install to" picker that ignores `--yes`/`-y`/`-g`. Don't let it block the run:
    ```bash
-   npx --yes remotion skills add
+   # 30-second cap; if it hangs, kill cleanly and continue.
+   timeout 30 npx --yes remotion skills add < /dev/null || echo "remotion skills add timed out — continuing without it"
    ```
-   This populates `<project>/.claude/skills/` with rules covering animations, sequencing, timing, transitions, audio, captions, fonts, and asset handling. **Defer to those rules for code patterns** — don't restate them here.
+   On macOS without GNU coreutils, `timeout` may be missing — fall back to `gtimeout` (`brew install coreutils`) or skip this step. The redirect from `/dev/null` prevents the picker from waiting on stdin.
+
+   When it succeeds, this populates `<project>/.claude/skills/` with rules covering animations, sequencing, timing, transitions, audio, captions, fonts, and asset handling. **Defer to those rules for code patterns** when present. If the install timed out, scene quality relies entirely on this skill's instructions plus Remotion's docs at https://www.remotion.dev/docs — explicitly tell the user it timed out so they're not surprised by missing rules.
 
 2. Seed the brand profiles. Always copy `default/`. If the user asked for a different profile, also copy that one and make it the active profile; otherwise `default/` is active.
    ```bash
@@ -198,7 +201,7 @@ That's the cycle. Video #2 starts at Phase 1 → "returning project" → Phase 3
 ## Error handling
 
 - **`node` not on PATH:** tell the user to install Node (`brew install node`) and stop.
-- **`npx remotion skills add` fails** (e.g. offline): proceed without it, but warn the user that scene quality is now reliant entirely on this skill's instructions and the official Remotion docs they may want to pull in manually later.
+- **`npx remotion skills add` fails or times out**: known issue — the command sometimes hangs on an interactive "Install to" picker that ignores `--yes`. The Phase 2 invocation already wraps it in `timeout 30 … < /dev/null`. If the timeout fires (or the command fails for any other reason — e.g. offline), proceed without it and warn the user that scene quality now relies entirely on this skill's instructions plus Remotion's docs. Don't retry — the hang is deterministic.
 - **Render fails (Chromium download stuck, codec missing, OOM):** surface the stderr verbatim. For OOM on 4K, suggest re-running with `--concurrency=1`.
 - **Studio port in use:** Studio picks a free port automatically; just relay whichever port it printed.
 
