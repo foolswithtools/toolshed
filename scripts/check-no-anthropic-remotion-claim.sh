@@ -28,16 +28,25 @@ for f in "${files[@]}"; do
     continue
   fi
 
-  # awk scans the file once; for each line, remembers the most recent line
-  # numbers where "anthropic" or "remotion" appeared (case-insensitive).
-  # Reports any pair within $WINDOW lines.
+  # awk scans the file once; for each line it strips "safe tokens" (project /
+  # repo / profile names that legitimately contain the words but are not claims
+  # about the company), then looks for the remaining bare references. The rule
+  # is about "Anthropic-the-company uses Remotion-the-tool" — not about our
+  # profile named anthropic-brand or our plugin named remotion-video.
   output=$(awk -v window="$WINDOW" '
+    function clean(s) {
+      # Strip known safe tokens before checking proximity.
+      gsub(/anthropic-brand/, "", s)
+      gsub(/anthropics\/skills/, "", s)
+      gsub(/anthropics\//, "", s)
+      gsub(/remotion-video/, "", s)
+      return s
+    }
     BEGIN { last_a = -10000; last_r = -10000 }
     {
-      line = tolower($0)
+      line = clean(tolower($0))
       has_a = index(line, "anthropic") > 0
-      # match remotion or remotion-dev (the -dev is a substring of remotion-dev,
-      # so a plain "remotion" match covers both)
+      # plain "remotion" covers "remotion-dev" too (it is a substring).
       has_r = index(line, "remotion") > 0
       if (has_a) last_a = NR
       if (has_r) last_r = NR

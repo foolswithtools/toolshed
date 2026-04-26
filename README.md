@@ -87,7 +87,7 @@ The first invocation in a folder scaffolds a long-lived Remotion project under `
 | `auto_start_studio`        | `true`             | Auto-launch `npx remotion studio` for live preview during iteration.                             |
 | `screenshot_scale`         | `0.25`             | `--scale` for `npx remotion still` PNG verification frames.                                       |
 
-The persistent brand style guide lives in `<project>/src/brand/` (`style-guide.ts` + `BRAND.md`) — the skill seeds it on first run and updates it when the user promotes a one-off element into the brand.
+The persistent brand style guide lives in `<project>/src/brand/profiles/<name>/` and is selected by `<project>/src/brand/active.ts`. The skill seeds the `default` profile on first run, plus any additional profile you ask for (e.g. `anthropic-brand`, which mirrors the public visual identity documented in [`anthropics/skills`'s brand-guidelines skill](https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md)). Switch profiles per video by saying "use the `<name>` profile".
 
 ## Layout
 
@@ -113,8 +113,16 @@ The persistent brand style guide lives in `<project>/src/brand/` (`style-guide.t
 │               ├── SKILL.md
 │               ├── config.json
 │               └── templates/
-│                   ├── style-guide.ts
-│                   └── BRAND.md
+│                   ├── default/
+│                   │   ├── style-guide.ts
+│                   │   └── BRAND.md
+│                   └── anthropic-brand/
+│                       ├── style-guide.ts
+│                       ├── BRAND.md
+│                       └── components/
+│                           ├── WordmarkHero.tsx
+│                           ├── TypeLedTitle.tsx
+│                           └── AccentCallout.tsx
 ├── README.md
 └── .gitignore
 ```

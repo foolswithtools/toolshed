@@ -6,7 +6,15 @@ Guardrails and conventions for anyone (human or Claude) editing this repo. Keep 
 
 No file committed to this repo may state, imply, or hint that Anthropic uses Remotion, that Anthropic builds its launch videos with Remotion, or that any Anthropic-produced video was created with Remotion. That link is unverified and we will not put it into a public repo.
 
-This rule is enforced by `scripts/check-no-anthropic-remotion-claim.sh`, which fails if a committed file places the words "anthropic" and "remotion" (or "remotion-dev") within ~3 lines of each other. `CLAUDE.md` and the script itself are exempted because they exist to describe the rule. Run it before every push:
+This rule is enforced by `scripts/check-no-anthropic-remotion-claim.sh`, which fails if a committed file places the words "anthropic" and "remotion" (or "remotion-dev") within ~3 lines of each other. Before checking, the script strips a small set of *safe tokens* — names that legitimately contain those words but aren't claims about the company:
+
+- `anthropic-brand` (a profile name)
+- `anthropics/skills`, `anthropics/` (the public repo)
+- `remotion-video` (this plugin's name)
+
+That means you can write "the `anthropic-brand` profile in `remotion-video`" freely. What you cannot write is bare "Anthropic" near bare "Remotion".
+
+`CLAUDE.md` and the script itself are exempted from the scan because they exist to describe the rule. Run it before every push:
 
 ```
 bash scripts/check-no-anthropic-remotion-claim.sh

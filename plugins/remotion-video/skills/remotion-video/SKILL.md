@@ -56,6 +56,23 @@ Walk the user through these — do not collapse them into one shot. The iteratio
 
 ### Phase 2 — Bootstrap rules + brand
 
+#### How brand profiles work
+
+The plugin ships multiple brand profiles under `${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/`:
+
+- `default/` — neutral dark cinematic style. Always seeded.
+- `anthropic-brand/` — the public visual identity (palette + Poppins/Lora typography) documented in the [`anthropics/skills` brand-guidelines skill](https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md).
+
+In the Remotion project, profiles live at `<project>/src/brand/profiles/<name>/` and contain `style-guide.ts`, `BRAND.md`, and an optional `components/` directory. The active profile is selected by `<project>/src/brand/active.ts`, which simply re-exports from the active profile so scenes can `import { palette, fonts, ... } from "../../brand/active"` without caring which profile is current.
+
+**Detect profile selection** from the user's prompt at the start of every invocation:
+
+- "use the `anthropic-brand` profile" / "use anthropic-brand" / "Anthropic style" → `anthropic-brand`
+- "use the default profile" / no profile mentioned → `default`
+- Future profiles: match the directory name under `templates/`.
+
+If the user says "for work" or "personal" without a profile name, ask via **AskUserQuestion** which profile to use (and offer to add a new one if neither fits).
+
 **Fresh project (first run):**
 
 1. Install Remotion's official agent skills so subsequent edits in this folder follow Remotion conventions:
@@ -64,14 +81,24 @@ Walk the user through these — do not collapse them into one shot. The iteratio
    ```
    This populates `<project>/.claude/skills/` with rules covering animations, sequencing, timing, transitions, audio, captions, fonts, and asset handling. **Defer to those rules for code patterns** — don't restate them here.
 
-2. Copy the persistent style guide into the project:
+2. Seed the brand profiles. Always copy `default/`. If the user asked for a different profile, also copy that one and make it the active profile; otherwise `default/` is active.
    ```bash
-   mkdir -p <project>/src/brand
-   cp ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/style-guide.ts <project>/src/brand/style-guide.ts
-   cp ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/BRAND.md     <project>/src/brand/BRAND.md
+   mkdir -p <project>/src/brand/profiles
+   cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/default <project>/src/brand/profiles/default
+   # If the user requested a non-default profile (e.g. anthropic-brand):
+   cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/anthropic-brand <project>/src/brand/profiles/anthropic-brand
    ```
 
-3. Add the helper packages most videos need:
+3. Write `<project>/src/brand/active.ts` so scenes import the active profile transparently:
+   ```ts
+   // active.ts — re-export from the active profile.
+   // Switch profiles by changing the export source below (or by re-running the
+   // skill with "use the <name> profile").
+   export * from "./profiles/<active-profile>/style-guide";
+   export const ACTIVE_PROFILE = "<active-profile>";
+   ```
+
+4. Add the helper packages most videos need:
    ```bash
    (cd <project> && npx --yes remotion add @remotion/transitions @remotion/media)
    ```
@@ -79,8 +106,11 @@ Walk the user through these — do not collapse them into one shot. The iteratio
 
 **Returning project:**
 
-1. Read `<project>/src/brand/BRAND.md` so you have the established style in working context. Note any promoted components in `<project>/src/brand/components/`.
-2. List existing videos: `ls <project>/videos/` so you can suggest reusing patterns from neighbors.
+1. List available profiles: `ls <project>/src/brand/profiles/`.
+2. Read `<project>/src/brand/active.ts` to learn the active profile.
+3. Read the active profile's `BRAND.md` (`<project>/src/brand/profiles/<active>/BRAND.md`) so you have the established style in working context. Note any promoted components in `<project>/src/brand/profiles/<active>/components/`.
+4. **If the user's current prompt selects a different profile** (e.g. "use the anthropic-brand profile" when the active one is `default`), copy that profile from templates if it isn't already in `src/brand/profiles/`, then update `src/brand/active.ts` to re-export from it. Tell the user you switched.
+5. List existing videos: `ls <project>/videos/` so you can suggest reusing patterns from neighbors.
 
 ### Phase 3 — Plan the video (and wait for approval)
 
@@ -106,7 +136,7 @@ When approved, write the plan to `<project>/videos/<slug>/PLAN.md` so future rev
 
 For each beat in the approved plan:
 
-1. Create `<project>/videos/<slug>/scenes/<Name>.tsx` as an `AbsoluteFill`-rooted React component. Drive all animation from `useCurrentFrame()` and `useVideoConfig()`. **Import colors, fonts, easings, and durations from `src/brand/style-guide.ts` — never hardcode brand values.** Reuse any promoted component from `src/brand/components/` when applicable.
+1. Create `<project>/videos/<slug>/scenes/<Name>.tsx` as an `AbsoluteFill`-rooted React component. Drive all animation from `useCurrentFrame()` and `useVideoConfig()`. **Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode brand values.** That barrel re-exports from the active profile, so swapping profiles requires no scene-file edits. Reuse any promoted component from `src/brand/profiles/<active>/components/` when applicable.
 
 2. Wire scenes into a per-video master in `<project>/videos/<slug>/Root.tsx`:
    - Use `<TransitionSeries>` from `@remotion/transitions` with the per-beat transitions from the plan.
@@ -148,10 +178,10 @@ For each beat in the approved plan:
 
 2. Tell the user the absolute path to the rendered file.
 
-3. **Promote.** Ask: "Anything from this video worth saving as a brand element for the next one?" If yes:
-   - Move the reusable component to `<project>/src/brand/components/<Name>.tsx` and update its imports.
-   - Add a line to `<project>/src/brand/BRAND.md`'s **Promotion log** with the date, video slug, what was promoted, and why.
-   - If a new color/easing/duration earned its place, add it to `style-guide.ts` (don't bloat the style guide with one-offs that didn't reuse).
+3. **Promote.** Ask: "Anything from this video worth saving as a brand element for the next one?" If yes — promotion goes into the **active profile**, not a global brand folder:
+   - Move the reusable component to `<project>/src/brand/profiles/<active>/components/<Name>.tsx` and update its imports.
+   - Add a line to `<project>/src/brand/profiles/<active>/BRAND.md`'s **Promotion log** with the date, video slug, what was promoted, and why.
+   - If a new color/easing/duration earned its place, add it to `<project>/src/brand/profiles/<active>/style-guide.ts` (don't bloat the style guide with one-offs that didn't reuse). For source-constrained profiles like `anthropic-brand`, only promote values that are valid under the source rules — don't introduce off-source colors.
 
 That's the cycle. Video #2 starts at Phase 1 → "returning project" → Phase 3, with a head start.
 
@@ -177,4 +207,5 @@ That's the cycle. Video #2 starts at Phase 1 → "returning project" → Phase 3
 - `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code when the plugin loads. If unset, derive paths from this SKILL.md's location.
 - We deliberately do **not** generate music. If the user wants a soundtrack, point them to Suno/Udio/etc., have them drop the mp3 into `<project>/public/`, and wire it up with `<Audio src={staticFile("…")} />` from `@remotion/media`.
 - Per-video subdirectories (`videos/<slug>/`) keep scene files, the per-video `Root.tsx`, the `PLAN.md`, screenshot checks under `.checks/`, and the rendered MP4 colocated. The top-level `src/Root.tsx` is the registry that imports each video's master composition.
-- Resist editing `src/brand/style-guide.ts` mid-video. Promotions happen in Phase 6, after a successful render — that's how the style guide stays trustworthy across projects.
+- Resist editing `src/brand/profiles/<active>/style-guide.ts` mid-video. Promotions happen in Phase 6, after a successful render — that's how the style guide stays trustworthy across projects.
+- **Adding a new profile from scratch:** `cp -R src/brand/profiles/default src/brand/profiles/<new-name>`, edit its `style-guide.ts` and `BRAND.md`, then point `src/brand/active.ts` at it. To ship the new profile to other toolshed users, also drop a copy under `${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/<new-name>/`.
