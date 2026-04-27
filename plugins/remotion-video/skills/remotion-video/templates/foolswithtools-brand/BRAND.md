@@ -64,13 +64,13 @@ Sizes: `hero: 192`, `title: 104`, `subtitle: 56`, `body: 36`, `caption: 24`, `mi
 - **The scribble underline is signature.** When you want to call attention to a phrase, use `ScribbleUnderline` rather than highlight chrome. It's the brand's gesture.
 - **Halftones drift subtly.** ~8px slow drift over a scene — they're decoration, not dominant.
 - **Mid-tempo.** `intro: 75`, `beat: 80`, `outro: 80`, `transition: 10`. Fast hard cuts mostly, with rare 10-frame fades. Slower than promo, faster than anthropic.
-- **Easings:** `pop` for overshoot, `swiftOut` for normal, `softInOut` for slow, `expoOut` for whips, `scribble` (less smooth) for marker reveals.
+- **Easings:** `pop` for overshoot, `swiftOut` for normal, `softInOut` for slow, `expoOut` for whips, `scribble` (less smooth) for marker reveals, `apple` (long-tail no overshoot, classic Material/Apple ease-in-out) for premium-feeling slow reveals where pop would feel wrong.
 
 ## Composition primitives
 
 The seven components shipped with this profile:
 
-- **`WordmarkHero.tsx`** — full-bleed massive uppercase wordmark on cream canvas. Single line or stacked-words layout, optional Space-Grotesk tagline. Staggered pop-in per line.
+- **`WordmarkHero.tsx`** — full-bleed massive uppercase wordmark on cream canvas. Single line or stacked-words layout, optional Space-Grotesk tagline. Staggered pop-in per line. `align: 'left' | 'center'` prop — left is the canonical foolswith.tools hero treatment; center is the product-reveal treatment for premium / Apple-pace reels.
 - **`BentoTile.tsx`** — bordered rounded-card primitive (2px charcoal or beat-accent border, 24/32 radius, lifted shadow). For grouping content with the chunky-border maker-blog look.
 - **`TerminalChip.tsx`** — black + acid-green mono pill. Inline command-line snippets, file names, status indicators. Optional blinking cursor.
 - **`ScribbleUnderline.tsx`** — hand-drawn-feeling SVG underline that draws on under text. Caller passes `width` prop. Signature gesture for emphasis.
@@ -86,4 +86,5 @@ If a one-off needed a color outside the documented palette to work, don't promot
 
 ## Promotion log
 
-- _(empty)_
+- **2026-04-26** — `BrandedTile` (from `screencast-cut-demo`). Composes `BentoTile` + corner-clipped `HalftoneOverlay` into a single rounded card. Promoted because `ResultScene` was open-coding the same wrapper-div + BentoTile + HalftoneOverlay composition four times in a row; future result/grid scenes will hit the same shape.
+- **2026-04-26** — `WordmarkHero.align` prop + `easings.apple` token (from `screencast-cut-premium`). The premium reel's brand-mark beat needed a *centered* product wordmark and a no-overshoot ease for slow reveals. Both gaps required scene-local workarounds during the build (an inline wordmark in `BrandMarkScene`, plus `expoOut` substituted for an Apple-pace ease). Closing the gaps means the next premium piece reuses the primitive directly.

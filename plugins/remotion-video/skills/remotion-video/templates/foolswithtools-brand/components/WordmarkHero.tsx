@@ -12,6 +12,10 @@ type Props = {
   tagline?: string;
   // Skip the uppercase transform for non-wordmark uses. Default: false.
   preserveCase?: boolean;
+  // Horizontal alignment of the wordmark + tagline block.
+  // - "left" (default): canonical foolswith.tools hero treatment, flush-left.
+  // - "center": product-reveal Apple-pace treatment, centered both axes.
+  align?: "left" | "center";
 };
 
 export const WordmarkHero: React.FC<Props> = ({
@@ -19,12 +23,14 @@ export const WordmarkHero: React.FC<Props> = ({
   breakLines = false,
   tagline,
   preserveCase = false,
+  align = "left",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   // Lines: either one full string or split into words.
   const lines = breakLines ? word.split(/\s+/) : [word];
+  const isCentered = align === "center";
 
   return (
     <AbsoluteFill
@@ -33,7 +39,8 @@ export const WordmarkHero: React.FC<Props> = ({
         padding: layout.safePadding,
         flexDirection: "column",
         justifyContent: "center",
-        alignItems: "flex-start",
+        alignItems: isCentered ? "center" : "flex-start",
+        textAlign: isCentered ? "center" : "left",
       }}
     >
       {lines.map((line, i) => {

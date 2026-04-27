@@ -104,6 +104,10 @@ export const easings = {
   expoOut: Easing.bezier(0.16, 1, 0.3, 1),
   // For hand-drawn marker reveal — not too smooth.
   scribble: Easing.bezier(0.4, 0.1, 0.6, 0.9),
+  // Apple-pace: long-tail, no overshoot, premium-feeling. Use for slow hero
+  // reveals and Apple-style crossfade-driven beats. Different from expoOut —
+  // this is a classic Material/Apple ease-in-out curve, not a fast ease-out.
+  apple: Easing.bezier(0.4, 0, 0.2, 1),
 } as const;
 
 // Springs — punchy with a tiny overshoot. Less aggressive than promo.
