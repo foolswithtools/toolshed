@@ -87,7 +87,7 @@ The first invocation in a folder scaffolds a long-lived Remotion project under `
 | `auto_start_studio`        | `true`             | Auto-launch `npx remotion studio` for live preview during iteration.                             |
 | `screenshot_scale`         | `0.25`             | `--scale` for `npx remotion still` PNG verification frames.                                       |
 
-The persistent brand style guide lives in `<project>/src/brand/profiles/<name>/` and is selected by `<project>/src/brand/active.ts`. The skill seeds the `default` profile on first run, plus any additional profile you ask for (e.g. `anthropic-brand`, which mirrors the public visual identity documented in [`anthropics/skills`'s brand-guidelines skill](https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md)). Switch profiles per video by saying "use the `<name>` profile".
+The persistent brand style guide lives in `<project>/src/brand/profiles/<name>/` and is selected by `<project>/src/brand/active.ts`. The skill seeds the `default` profile on first run, plus any additional profile you ask for (e.g. `foolswithtools-brand`, the project's own pop-art / punk-zine maker-blog brand pulled from [`foolswith.tools`](https://foolswith.tools/)). Switch profiles per video by saying "use the `<name>` profile". Build your own profile by copying any of the bundled ones and customizing.
 
 ## Layout
 
@@ -116,13 +116,10 @@ The persistent brand style guide lives in `<project>/src/brand/profiles/<name>/`
 │                   ├── default/
 │                   │   ├── style-guide.ts
 │                   │   └── BRAND.md
-│                   └── anthropic-brand/
+│                   └── foolswithtools-brand/
 │                       ├── style-guide.ts
 │                       ├── BRAND.md
-│                       └── components/
-│                           ├── WordmarkHero.tsx
-│                           ├── TypeLedTitle.tsx
-│                           └── AccentCallout.tsx
+│                       └── components/  (8 brand primitives)
 ├── README.md
 └── .gitignore
 ```

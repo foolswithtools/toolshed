@@ -1,6 +1,6 @@
 {
   "name": "remotion-video",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Prompt-driven motion-graphics video creation with Remotion. Scaffolds a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Reuses a persistent brand style guide across every video in the project.",
   "author": {
     "name": "foolswithtools",

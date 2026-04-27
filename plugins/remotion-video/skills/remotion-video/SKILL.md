@@ -1,7 +1,7 @@
 ---
 name: remotion-video
 description: Use this skill when the user asks to "make a video", "create a motion graphics video", "build a launch video / intro / outro / explainer with Remotion", or describes a video they want generated from a prompt. Scaffolds (or reuses) a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat with the user, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Remotion Video Studio
@@ -61,14 +61,14 @@ Walk the user through these — do not collapse them into one shot. The iteratio
 The plugin ships multiple brand profiles under `${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/`:
 
 - `default/` — neutral dark cinematic style. Always seeded.
-- `anthropic-brand/` — the public visual identity (palette + Poppins/Lora typography) documented in the [`anthropics/skills` brand-guidelines skill](https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md).
 - `foolswithtools-brand/` — the master brand for the foolswithtools project: cream paper canvas, charcoal text, acid-green-led accent cycle, chunky 2px borders, Archivo Black wordmarks. Pulled from [`foolswith.tools`](https://foolswith.tools/) and [`foolswithtools/website`](https://github.com/foolswithtools/website). Ships eight components (`WordmarkHero`, `BentoTile`, `BrandedTile`, `TerminalChip`, `ScribbleUnderline`, `HalftoneOverlay`, `GummyButton`, `StickerAvatar`).
+
+**Deliberately not bundled:** profiles that mimic another company's published brand identity. Even when those identities are publicly documented, distributing a "use this style" template creates real risk that output videos get mistaken for official content from that company. Build your own profile by copying `default/` and customizing — that's the right way to make a video look the way you want.
 
 In the Remotion project, profiles live at `<project>/src/brand/profiles/<name>/` and contain `style-guide.ts`, `BRAND.md`, and an optional `components/` directory. The active profile is selected by `<project>/src/brand/active.ts`, which simply re-exports from the active profile so scenes can `import { palette, fonts, ... } from "../../brand/active"` without caring which profile is current.
 
 **Detect profile selection** from the user's prompt at the start of every invocation:
 
-- "use the `anthropic-brand` profile" / "use anthropic-brand" / "Anthropic style" → `anthropic-brand`
 - "use the `foolswithtools-brand` profile" / "use foolswithtools-brand" / "foolswithtools style" → `foolswithtools-brand`
 - "use the default profile" / no profile mentioned → `default`
 - Future profiles: match the directory name under `templates/`.
@@ -90,8 +90,8 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
    ```bash
    mkdir -p <project>/src/brand/profiles
    cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/default <project>/src/brand/profiles/default
-   # If the user requested a non-default profile (e.g. anthropic-brand):
-   cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/anthropic-brand <project>/src/brand/profiles/anthropic-brand
+   # If the user requested a non-default profile (e.g. foolswithtools-brand):
+   cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/foolswithtools-brand <project>/src/brand/profiles/foolswithtools-brand
    ```
 
 3. Write `<project>/src/brand/active.ts` so scenes import the active profile transparently:
@@ -114,7 +114,7 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
 1. List available profiles: `ls <project>/src/brand/profiles/`.
 2. Read `<project>/src/brand/active.ts` to learn the active profile.
 3. Read the active profile's `BRAND.md` (`<project>/src/brand/profiles/<active>/BRAND.md`) so you have the established style in working context. Note any promoted components in `<project>/src/brand/profiles/<active>/components/`.
-4. **If the user's current prompt selects a different profile** (e.g. "use the anthropic-brand profile" when the active one is `default`), copy that profile from templates if it isn't already in `src/brand/profiles/`, then update `src/brand/active.ts` to re-export from it. Tell the user you switched.
+4. **If the user's current prompt selects a different profile** (e.g. "use the foolswithtools-brand profile" when the active one is `default`), copy that profile from templates if it isn't already in `src/brand/profiles/`, then update `src/brand/active.ts` to re-export from it. Tell the user you switched.
 5. List existing videos: `ls <project>/videos/` so you can suggest reusing patterns from neighbors.
 
 ### Phase 3 — Plan the video (and wait for approval)
@@ -186,7 +186,7 @@ For each beat in the approved plan:
 3. **Promote.** Ask: "Anything from this video worth saving as a brand element for the next one?" If yes — promotion goes into the **active profile**, not a global brand folder:
    - Move the reusable component to `<project>/src/brand/profiles/<active>/components/<Name>.tsx` and update its imports.
    - Add a line to `<project>/src/brand/profiles/<active>/BRAND.md`'s **Promotion log** with the date, video slug, what was promoted, and why.
-   - If a new color/easing/duration earned its place, add it to `<project>/src/brand/profiles/<active>/style-guide.ts` (don't bloat the style guide with one-offs that didn't reuse). For source-constrained profiles like `anthropic-brand`, only promote values that are valid under the source rules — don't introduce off-source colors.
+   - If a new color/easing/duration earned its place, add it to `<project>/src/brand/profiles/<active>/style-guide.ts` (don't bloat the style guide with one-offs that didn't reuse). If a profile documents source-of-truth constraints in its `BRAND.md` (like the published values it tracks), only promote values that are valid under those rules — don't introduce off-source colors.
 
 That's the cycle. Video #2 starts at Phase 1 → "returning project" → Phase 3, with a head start.
 
