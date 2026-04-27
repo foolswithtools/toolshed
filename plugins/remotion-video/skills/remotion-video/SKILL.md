@@ -1,7 +1,7 @@
 ---
 name: remotion-video
 description: Use this skill when the user asks to "make a video", "create a motion graphics video", "build a launch video / intro / outro / explainer with Remotion", or describes a video they want generated from a prompt. Scaffolds (or reuses) a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat with the user, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
-version: 0.1.0
+version: 0.3.0
 ---
 
 # Remotion Video Studio
@@ -62,12 +62,14 @@ The plugin ships multiple brand profiles under `${CLAUDE_PLUGIN_ROOT}/skills/rem
 
 - `default/` — neutral dark cinematic style. Always seeded.
 - `anthropic-brand/` — the public visual identity (palette + Poppins/Lora typography) documented in the [`anthropics/skills` brand-guidelines skill](https://github.com/anthropics/skills/blob/main/skills/brand-guidelines/SKILL.md).
+- `foolswithtools-brand/` — the master brand for the foolswithtools project: cream paper canvas, charcoal text, acid-green-led accent cycle, chunky 2px borders, Archivo Black wordmarks. Pulled from [`foolswith.tools`](https://foolswith.tools/) and [`foolswithtools/website`](https://github.com/foolswithtools/website). Ships seven components (`WordmarkHero`, `BentoTile`, `TerminalChip`, `ScribbleUnderline`, `HalftoneOverlay`, `GummyButton`, `StickerAvatar`).
 
 In the Remotion project, profiles live at `<project>/src/brand/profiles/<name>/` and contain `style-guide.ts`, `BRAND.md`, and an optional `components/` directory. The active profile is selected by `<project>/src/brand/active.ts`, which simply re-exports from the active profile so scenes can `import { palette, fonts, ... } from "../../brand/active"` without caring which profile is current.
 
 **Detect profile selection** from the user's prompt at the start of every invocation:
 
 - "use the `anthropic-brand` profile" / "use anthropic-brand" / "Anthropic style" → `anthropic-brand`
+- "use the `foolswithtools-brand` profile" / "use foolswithtools-brand" / "foolswithtools style" → `foolswithtools-brand`
 - "use the default profile" / no profile mentioned → `default`
 - Future profiles: match the directory name under `templates/`.
 
