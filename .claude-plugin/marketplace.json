@@ -22,6 +22,11 @@
       "name": "screencast-cut",
       "source": "./plugins/screencast-cut",
       "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them, transcribes audio with Whisper for word-level captions, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile so output matches the rest of your videos."
+    },
+    {
+      "name": "music-grab",
+      "source": "./plugins/music-grab",
+      "description": "Grab just the audio from a YouTube / SoundCloud / direct URL via yt-dlp, save it under your project's music folder, and append a CREDITS.md entry recording the source URL, license evidence found in the source page description, and any attribution requirements. Warn-and-proceed on missing license language — the user owns final license verification."
     }
   ]
 }

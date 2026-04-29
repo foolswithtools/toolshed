@@ -1,0 +1,19 @@
+{
+  "output_root": "./public/music",
+  "audio_format": "mp3",
+  "audio_quality": "0",
+  "credits_file": "CREDITS.md",
+  "license_required_phrases": [
+    "creative commons",
+    "cc-by",
+    "cc by",
+    "public domain",
+    "no copyright",
+    "royalty free",
+    "royalty-free",
+    "free for use",
+    "free to use",
+    "free for commercial use",
+    "pixabay license"
+  ]
+}

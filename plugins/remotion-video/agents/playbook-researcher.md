@@ -92,7 +92,7 @@ _None yet._
 - **Do not write Learnings entries.** That section starts empty (`_None yet._`). Learnings get appended later by `screencast-cut` Phase 7 from real shipped videos. If you fill them in from research, you'll pollute the curated record.
 - **Do not include channel-specific advice in the prose** (e.g. "for SharePoint specifically…"). Genre conventions only. Channel nuance lives in Learnings.
 - **Do not invent Decision-override keys.** The set above is what `screencast-cut` parses. Adding new keys breaks the parser silently.
-- **Do not cite Anthropic in any way that implies they use Remotion or this pipeline.** This repo's `CLAUDE.md` enforces a hard rule against that. Even a passing reference like "Anthropic's launch videos use…" is forbidden.
+- **Do not connect the company Anthropic to this plugin's pipeline in any way.** This repo's `CLAUDE.md` enforces a hard rule against that proximity, including passing references like "Anthropic's launch videos use…". Keep the company name and the name of this plugin far apart in your output, and never imply a tooling link.
 - **One file per invocation.** If the user wants both genres, they invoke you twice. That keeps each run focused and lets them review one before requesting the other.
 
 ## Tone
