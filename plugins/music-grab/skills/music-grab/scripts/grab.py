@@ -53,9 +53,17 @@ def slugify(value: str, max_len: int = 80) -> str:
     return s[:max_len].rstrip("-")
 
 
+YTDLP_BASE_ARGS = [
+    # Cloudflare-fronted sites (Pixabay among them) reject yt-dlp's default
+    # User-Agent with a 403. The generic extractor's "impersonate" mode
+    # presents a real-browser TLS fingerprint and clears the challenge.
+    "--extractor-args", "generic:impersonate",
+]
+
+
 def probe(url: str) -> dict:
     fmt = SAFE_FIELD_SEP.join(f"%({f})s" for f in PROBE_FIELDS)
-    cmd = ["yt-dlp", "--print", fmt, "--skip-download", "--no-playlist", url]
+    cmd = ["yt-dlp", *YTDLP_BASE_ARGS, "--print", fmt, "--skip-download", "--no-playlist", url]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         sys.stderr.write(result.stderr)
@@ -134,6 +142,7 @@ def pick_unique_path(directory: Path, base: str, ext: str) -> Path:
 def download(url: str, output_template: str, audio_format: str, audio_quality: str) -> None:
     cmd = [
         "yt-dlp",
+        *YTDLP_BASE_ARGS,
         "--extract-audio",
         "--audio-format", audio_format,
         "--audio-quality", str(audio_quality),
@@ -207,8 +216,11 @@ def main() -> int:
 
     meta = probe(args.url)
 
-    slug_base = f"{slugify(meta.get('uploader', ''))}-{slugify(meta.get('title', ''))}"
-    slug_base = slug_base.strip("-") or "unknown-track"
+    uploader_raw = (meta.get("uploader") or "").strip()
+    uploader_slug = slugify(uploader_raw) if uploader_raw and uploader_raw.upper() != "NA" else ""
+    title_slug = slugify(meta.get("title", ""))
+    slug_base = f"{uploader_slug}-{title_slug}".strip("-") if uploader_slug else title_slug
+    slug_base = slug_base or "unknown-track"
 
     audio_path = pick_unique_path(output_dir, slug_base, args.audio_format)
     output_template = str(audio_path.with_suffix("")) + ".%(ext)s"
