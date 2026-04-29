@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
-description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project so output style matches the rest of the user's videos.
-version: 0.2.0
+description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions) so output style matches the rest of the user's videos.
+version: 0.3.0
 ---
 
 # Screencast Cut
@@ -66,6 +66,8 @@ User overrides per call:
 - "skip the intro" → `default_intro_frames=0`. Same shape for outro.
 - "don't speed-ramp anything" → `idle_threshold_speedramp_seconds=999`.
 
+**Precedence note:** several of these defaults — `default_intro_frames`, `default_outro_frames`, `caption_style`, and the cut-cadence heuristics — get overridden by the active profile's **playbook** for the detected genre (Phase 2, step 8 onward). Final precedence is **config defaults < playbook overrides < user prompt overrides**. The plan you surface in Phase 3 must label which source each decision came from so the user can push back on the right layer.
+
 ## The six-phase workflow
 
 Same shape as the `remotion-video` skill so the user only learns one rhythm.
@@ -78,7 +80,7 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
 2. List existing videos under `<project>/videos/` so you can suggest a slug that won't collide.
 3. Pick a slug from the user's prompt (kebab-case, short — e.g. `demo-cli-tutorial`).
 
-### Phase 2 — Read brand profile + classify input
+### Phase 2 — Read brand profile + classify input + resolve playbook
 
 1. List profiles: `ls <project>/src/brand/profiles/`.
 2. Read `<project>/src/brand/active.ts` to learn which profile is active. If the user said "use the X profile" in this prompt, follow the same switch logic the `remotion-video` skill uses (copy the template if missing, rewrite `active.ts` to re-export from it). Tell the user you switched.
@@ -95,6 +97,47 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
 
    **About CleanShot X specifically:** CleanShot X does *not* export click coordinates or timing. Its click highlights are rendered into the MP4 pixels, not a sidecar file. If the user supplies a CleanShot recording and expects auto-zoom on real clicks, tell them up-front: *either* re-record with a tool that exports an event stream (Screenize is one), *or* author a manual `events.json` with timestamps and approximate click positions. Computer-vision cursor tracking on raw MP4 is feasible but lands in a later slice.
 
+7. **Detect the genre.** Two outcomes only: `tutorial` or `shortform`. Resolution order:
+   - **Explicit user override** wins. Phrases like "for TikTok", "as a short", "vertical", "9:16" → `shortform`. "tutorial", "for YouTube", "long-form", "explainer", "16:9" → `tutorial`.
+   - **Inferred from input shape.** Probe the source (cast width or MP4 dimensions via `ffprobe`) and known duration:
+     - 9:16 master composition AND duration ≤ 60s → `shortform`.
+     - 16:9 master composition AND duration > 60s → `tutorial`.
+     - Anything ambiguous (e.g. 16:9 but 30s, or 9:16 but 4 minutes) → default `tutorial` and surface the assumption in the plan so the user can flip it.
+8. **Detect the `chapter_position` parameter** from the prompt. Recognize from phrasing:
+   - "chapter 1 of N", "first lesson", "intro to the series", "part 1" → `first`.
+   - "chapter <N> of <M>" (with N strictly between 1 and M), "part 2 of 5", "next in the series" → `middle`.
+   - "final chapter", "last lesson", "wrap-up", "the conclusion", "chapter <M> of <M>" → `last`.
+   - No chapter language → `standalone` (the default).
+
+   Also extract a **chapter title** if the prompt supplies one (e.g. "Chapter 3: Configuring the Database"). Save the title verbatim — it becomes the `ChapterCard.tsx` text in Phase 4.
+9. **Resolve the playbook.** Look for `PLAYBOOK-<genre>.md` in this order, take the first that exists:
+   1. `<project>/src/brand/profiles/<active>/PLAYBOOK-<genre>.md` — profile has its own playbook.
+   2. `<project>/src/brand/profiles/default/PLAYBOOK-<genre>.md` — default profile's playbook (scaffolded by `remotion-video`).
+   3. `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}/skills/remotion-video/templates/default/PLAYBOOK-<genre>.md` — plugin-shipped template (last resort; surface a note that the user should run the `remotion-video` skill once to scaffold the playbook into their project).
+
+   If no playbook is found anywhere (only possible if the plugin install is broken), proceed with config defaults only and tell the user the playbook layer is unavailable.
+10. **Parse the playbook's `## Decision overrides` block.** Read the file and extract every `- key: value # justification` line under that heading. Recognized keys (anything else is ignored with a one-line warning, since unknown keys mean a stale schema):
+    - `intro_frames` → integer; replaces `default_intro_frames`.
+    - `outro_frames` → integer; replaces `default_outro_frames`.
+    - `cut_cadence_first_10s` → `aggressive` | `calm`; biases beat-length floor for the first 10s of content.
+    - `cut_cadence_steady_state` → `aggressive` | `calm`; biases beat-length floor after the first 10s.
+    - `caption_style` → `karaoke` | `band`; replaces config `caption_style` (overrides `auto`).
+    - `cta_shape` → `question` | `next-steps` | `logo-card`; selects which outro template to use.
+    - `max_duration_s` → integer; if the planned cut exceeds this, surface a warning in the plan but do not auto-truncate.
+
+    Capture the inline justification verbatim — you'll surface it in the Phase 3 plan so the user sees *why* a decision was made.
+11. **Compute final decisions.** Apply precedence: **config defaults → playbook overrides → user prompt overrides**. Then layer `chapter_position` modifiers on top of the resolved values:
+    - `chapter_position = first` or `standalone` → no modification; resolved playbook values stand.
+    - `chapter_position = middle`:
+      - Replace the cold-open hook with a **recap-and-continue beat** of 7s (210 frames @ 30fps) before the first content beat. Voice and on-screen text reorient the viewer ("Last time we did X. Now we'll do Y.") rather than open cold.
+      - Replace the outro with a **transitional outro** ("Next: Chapter <N+1>"), `cta_shape` forced to `logo-card`.
+    - `chapter_position = last`:
+      - Keep the cold-open hook (the conclusion deserves attention).
+      - Force `cta_shape = logo-card` for a terminal/celebratory close (no question, no next-step ask — the series is done).
+    - **If a chapter title was extracted in step 8**, plan an extra `ChapterCard.tsx` scene between the intro wordmark and the first content beat. Use the active profile's title-card component if one exists (`<project>/src/brand/profiles/<active>/components/ChapterCard.tsx` or `TitleCard.tsx`); otherwise scaffold a minimal one in Phase 4.
+
+    Record the **source of every final decision** (`config` / `playbook` / `user` / `chapter_position`). Phase 3 surfaces this so the user can push back on the right layer.
+
 ### Phase 3a — Plan beats (asciinema path)
 
 Run the cast-to-frames pipeline up-front in *dry-run-ish* mode — actually, just run it for real. It's idempotent and the timing manifest is what you need to plan from:
@@ -110,16 +153,29 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/cast_to_frames.py" 
     --idle-cut "<idle_threshold_cut_seconds>"
 ```
 
-Read `videos/<slug>/source/timing.json`. Translate it into a beat plan:
+Read `videos/<slug>/source/timing.json`. Translate it into a beat plan, using the **final decisions resolved in Phase 2** (config + playbook + user + chapter_position):
 
-- **Intro beat** (`default_intro_frames` frames) — the active profile's wordmark hero or title card. Skip if `default_intro_frames=0`.
+- **Intro beat** (`intro_frames` from resolved decisions) — the active profile's wordmark hero or title card. Skip if `intro_frames = 0` (shortform default).
+- **Chapter card beat** — only if a chapter title was extracted in Phase 2 step 8. Insert between intro and first content beat. Duration ~2s.
+- **Recap-and-continue beat** (only if `chapter_position = middle`) — 7s, replaces the cold-open hook. Voice text reorients the viewer, no cold-open shock cut.
 - **Content beats**, alternating between:
-  - *Run* beats — stretches between idle gaps, played 1× speed.
+  - *Run* beats — stretches between idle gaps, played 1× speed. Apply the `cut_cadence_first_10s` / `cut_cadence_steady_state` bias when planning hold-lengths inside long runs (aggressive = sub-2s holds, calm = 20–40s holds).
   - *Speedramp* beats — gaps with `kind="speedramp"`, played at `speedramp_factor` × speed.
   - *Cut* beats — gaps with `kind="cut"` get replaced with a 1.0s "…" caption card (don't show frozen terminal for 8+ seconds).
-- **Outro beat** (`default_outro_frames` frames) — the active profile's outro / call-to-action card.
+- **Outro beat** (`outro_frames` from resolved decisions, shaped by `cta_shape`) — the active profile's outro card. `cta_shape = next-steps` → next-action text card; `cta_shape = question` → on-screen question card; `cta_shape = logo-card` → wordmark with no text ask.
 
-Surface the plan to the user as a numbered list with per-beat duration and what brand element it uses. Use **AskUserQuestion** for ambiguous high-level choices:
+**Surface the plan to the user as a numbered list** with, per beat: duration, brand element used, and — for any beat whose shape came from the playbook — the playbook's inline justification. At the top of the plan, print a small "Decisions" table listing every key from step 11 with its **value** and **source** (`config` / `playbook` / `user` / `chapter_position`). Example:
+
+```
+Decisions for this cut:
+  intro_frames        45        (playbook: default/tutorial)
+  outro_frames        90        (playbook: default/tutorial)
+  caption_style       band      (playbook: default/tutorial)
+  cta_shape           logo-card (chapter_position: last)
+  max_duration_s      600       (playbook: default/tutorial)
+```
+
+Use **AskUserQuestion** for ambiguous high-level choices:
 - Aspect ratio if the cast width doesn't match the project default (terminals are wide; 9:16 needs a center-crop policy).
 - Whether to keep the long idle gaps as speed-ramps or cut entirely (offer both for any gap that straddles the threshold).
 - Whether to caption the terminal output too, or only the audio narration.
@@ -176,15 +232,19 @@ The parser writes `<project>/videos/<slug>/source/zoom_anchors.json` with normal
 
 #### Plan beats
 
-- **Intro beat** (`default_intro_frames`) — wordmark hero from the active profile.
+Use the **final decisions resolved in Phase 2** for intro/outro/captions/cta_shape and the cadence biases — not raw config. The plan must surface the same Decisions table described in Phase 3a so the user can see which layer set each value.
+
+- **Intro beat** (`intro_frames` from resolved decisions) — wordmark hero from the active profile. Skip if `intro_frames = 0`.
+- **Chapter card beat** — only if a chapter title was extracted in Phase 2 step 8. Insert between intro and first content beat. Duration ~2s.
+- **Recap-and-continue beat** (only if `chapter_position = middle`) — 7s, replaces the cold-open hook for chapters in the middle of a series.
 - **Content beats** built from the MP4 plus zoom anchors:
   - Default: the MP4 plays at 1× behind the active profile's caption layer.
   - For each click anchor, plan a *zoom segment*: zoom-in starting **300ms before** the click, hold at the active zoom for **1.5s**, zoom-out **400ms** after. Use the active profile's easing presets (e.g. `easings.zoomIn`, `easings.zoomOut` if defined; else `Easing.bezier(0.4, 0, 0.2, 1)`).
-  - Zoom level: 1.6× by default (configurable via `zoom_factor` in config later). Center the zoom on the click coordinate, clamping the visible window so it doesn't drift outside the source frame.
+  - Zoom level: 1.6× by default (configurable via `zoom_factor` in config). Center the zoom on the click coordinate, clamping the visible window so it doesn't drift outside the source frame.
   - Adjacent click anchors within 1.5s of each other → merge into one zoom segment that pans between the two anchor points.
-- **Outro beat** (`default_outro_frames`) — call-to-action card from the active profile.
+- **Outro beat** (`outro_frames` from resolved decisions, shaped by `cta_shape`) — call-to-action card from the active profile.
 
-Surface the plan as a numbered list including each click anchor's `t_s` and `label`. Use **AskUserQuestion** for:
+Surface the plan as a numbered list including each click anchor's `t_s` and `label`. Print the Decisions table at the top (same format as Phase 3a). Use **AskUserQuestion** for:
 - "These two clicks are 800ms apart — merge into one pan, or two separate zooms?"
 - "The zoom on the click at 31.5s would clip the right edge — center it differently, reduce zoom to 1.3×, or skip the zoom?"
 
@@ -211,11 +271,16 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
 3. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode. Reuse promoted components from `<project>/src/brand/profiles/<active>/components/` when applicable.
 
    The scene shapes you'll typically need (asciinema path):
-   - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener.
+   - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener. Omit if `intro_frames = 0`.
+   - `ChapterCard.tsx` — only when a chapter title was extracted in Phase 2. Reuse the active profile's title-card component if one exists at `<project>/src/brand/profiles/<active>/components/ChapterCard.tsx` or `TitleCard.tsx`; otherwise scaffold a minimal local version that types out the chapter title in the profile's display face.
+   - `RecapCard.tsx` — only when `chapter_position = middle`. 7s beat that says "Last time: <X>. Now: <Y>." in the profile's voice. Plain text on the profile's background; this is a reorientation moment, not a hook.
    - `TerminalRun.tsx` — renders the PNG sequence between two timestamps. Use `<Img src={staticFile(\`<slug>/frames/\${pad(n)}.png\`)} />` driven by current frame mapped through `frame_times_s` from `timing.json`. For speed-ramped beats, scale the time mapping by `speedramp_factor`.
    - `IdleCutCard.tsx` — the "…" placeholder for cut gaps.
-   - `Captions.tsx` — reads `transcript.json`. For `caption_style="band"`, render a single line at the active word; for `karaoke`, render the segment with the active word highlighted in the profile's accent.
-   - `OutroCard.tsx` — call-to-action / closing card from the active profile.
+   - `Captions.tsx` — reads `transcript.json`. Use the **resolved `caption_style`** from Phase 2 (not raw config). For `band`, render a single two-line caption bar at the active word; for `karaoke`, render the active word highlighted in the profile's accent against a slightly dimmer baseline.
+   - `OutroCard.tsx` — closing card shaped by the **resolved `cta_shape`**:
+     - `next-steps` → "Now do X" with one concrete next-action line.
+     - `question` → on-screen question that invites a comment reply.
+     - `logo-card` → wordmark-only, no text ask (used by `chapter_position = last` and middle-chapter transitional outros).
 
    Additional scenes for the MP4 path:
    - `ScreenPlayback.tsx` — `<OffthreadVideo src={staticFile(\`<slug>/source.mp4\`)} startFrom={...} endAt={...} />`. Copy the MP4 once into `<project>/public/<slug>/source.mp4` so `staticFile()` resolves it.
@@ -254,24 +319,73 @@ Tell the user the absolute path. Then ask: "Anything from this cut worth saving 
 
 For source-constrained profiles (where `BRAND.md` says only certain values are allowed), don't promote off-source values — match the profile's rules.
 
+### Phase 7 — Capture a learning
+
+Right after you report the render path, the user has fresh muscle memory about what worked and what fought them. That window closes fast — once they move to the next task, the lesson is gone. Phase 7 captures one learning before the session ends.
+
+**Single AskUserQuestion, three options.** Don't wizard this — multi-step prompts after a render feel like homework and the user will dismiss them. One question, three buttons, then move on.
+
+The prompt:
+
+> "Anything from this cut worth remembering? *(picks the right place to save it)*
+> - **Save as a rule** — this is a pattern to apply to every `<active-profile>` `<genre>` cut from now on.
+> - **Just a note** — specific to this video, save under `videos/<slug>/NOTES.md`.
+> - **Skip** — nothing to capture this time."
+
+Then:
+
+1. **"Save as a rule" → append to the playbook's Learnings section.**
+   - If the active profile already has its own `PLAYBOOK-<genre>.md` (the resolution in Phase 2 step 9 found it at the profile path, not the default path), append directly to that file's `## Learnings` section.
+   - If the active profile is **inheriting from default** (Phase 2 step 9 fell through to a `default/` or plugin path), this is the **graduation moment**: copy the resolved playbook into `<project>/src/brand/profiles/<active>/PLAYBOOK-<genre>.md` first, *then* append the learning. Tell the user "this profile just graduated to its own `<genre>` playbook — future cuts will use it as the base." That copy is a one-time event per profile+genre.
+   - Replace the `_None yet._` placeholder on the first append.
+   - Entry format, exactly:
+
+     ```
+     - YYYY-MM-DD — <slug> — <rule>. Why: <reason>.
+     ```
+
+     Use today's date, the cut's slug, the rule the user gave you (rephrase to imperative if they framed it as a complaint), and a one-line "why" the user said or implied. If they didn't give a "why", ask one short follow-up to capture it — Learnings without justification rot fast because nobody remembers why they were added.
+
+2. **"Just a note" → write `<project>/videos/<slug>/NOTES.md`.**
+   - Single markdown file scoped to the cut. If it doesn't exist, create it with a one-line header `# Notes for <slug>`. Append a dated bullet: `- YYYY-MM-DD — <note text>`.
+   - Don't promote to the playbook later automatically — if the user wants the note to graduate to a rule, they re-run Phase 7 on a future cut and pick "Save as a rule."
+
+3. **"Skip" → say nothing else and stop.**
+   - No follow-up. The friction budget is small; respect it.
+
+**Hard rules for Phase 7:**
+
+- **Do not invent learnings.** If the user picks "Save as a rule" but doesn't give a clear rule, ask one short clarifying question, then either capture what they say or fall back to "Just a note" with their raw text. Never fabricate the rule from inference.
+- **Do not run Phase 7 on failed renders.** If Phase 6 surfaced a render error, skip Phase 7 entirely — the user is in a debugging headspace, not a reflection one.
+- **Do not stack questions.** Single AskUserQuestion with three options. The "why" follow-up only happens if option (a) is picked and the user didn't volunteer a reason.
+- **Decision-override edits live in their own pass, not Phase 7.** If the user wants to change a key in `## Decision overrides` (e.g. "always use `cta_shape: question` for this profile"), that's a deliberate playbook edit, not a Learnings append. Tell them "that's a playbook change — open the file and edit the override directly," then capture the rationale as a Learnings entry that references the override.
+
 ## Heuristics encoded
 
-These are the defaults the skill applies without asking. The user can override any of them; surface them in the plan so they have something to push back on:
+These are the defaults the skill applies without asking. The user can override any of them; surface them in the plan so they have something to push back on. Anything labeled **(playbook-driven)** comes from the active profile's `PLAYBOOK-<genre>.md` and the playbook's value wins over the config default.
 
 - Idle gap >= `idle_threshold_speedramp_seconds` (default 2s) → speed-ramp at `speedramp_factor` (default 4×).
 - Idle gap >= `idle_threshold_cut_seconds` (default 8s) → hard cut, replaced with a 1s "…" beat.
 - Click anchor → zoom segment: 300ms ramp-in, 1.5s hold at `zoom_factor` (default 1.6×), 400ms ramp-out, recentered on the click point.
 - Click anchors within 1.5s of each other → merge into one pan-between-points segment.
-- Caption style:
-  - `auto` + 16:9 master → `band` (clean caption bar at the bottom safe-zone).
-  - `auto` + 9:16 master → `karaoke` (per-word reveal in the profile accent).
-- Default intro: 1.5s wordmark hero from the active profile.
-- Default outro: 2s call-to-action card from the active profile.
+- **Genre detection** (Phase 2 step 7):
+  - Explicit user phrasing wins.
+  - 9:16 + duration ≤ 60s → `shortform`.
+  - 16:9 + duration > 60s → `tutorial`.
+  - Ambiguous → `tutorial` (default), surface the assumption.
+- **Caption style** *(playbook-driven)*: comes from playbook `caption_style` first; if config is left at `auto` and no playbook is found, fall back to `band` for 16:9 / `karaoke` for 9:16.
+- **Intro length** *(playbook-driven)*: tutorial playbook → ~1.5s wordmark; shortform playbook → 0 frames (no intro at all). Config `default_intro_frames` is the last-resort fallback.
+- **Outro length and shape** *(playbook-driven)*: tutorial → ~3s logo card with next-steps text; shortform → ~1.2s question card.
+- **Cut cadence** *(playbook-driven)*: `cut_cadence_first_10s` and `cut_cadence_steady_state` bias hold-length floors during run beats — `aggressive` keeps holds under 2s, `calm` allows 20–40s holds.
+- **Chapter position modifiers** (Phase 2 step 11): `middle` swaps the cold-open hook for a 7s recap-and-continue beat and forces the outro to a transitional logo-card; `last` keeps the hook but forces `cta_shape = logo-card`; `first` and `standalone` apply the playbook unmodified.
 - If the cast has zero `o` events (input-only or empty), stop and report — there's nothing to render.
 - If the MP4 has no resolvable click data (no Screenize package, no manual `events.json`), skip the auto-zoom layer and play the MP4 1× behind captions — don't fabricate zoom points from nothing.
+- If no `PLAYBOOK-<genre>.md` resolves anywhere (broken plugin install), proceed with raw config defaults and tell the user the playbook layer is unavailable.
 
 ## Error handling
 
+- **Playbook resolution failed.** All three playbook paths missed (profile, project default, plugin template). Proceed with config defaults only and tell the user "no playbook found — running on raw config; run the `remotion-video` skill to scaffold default playbooks into your project." Do not fabricate a playbook.
+- **Unknown decision-override key in playbook.** The playbook had a `key: value` line under `## Decision overrides` with a key the parser doesn't recognize. Skip that line, surface a one-line warning, and continue. Don't silently accept new keys — they signal schema drift.
 - **`agg` / `ffmpeg` / `whisper-cli` missing.** Surface the exact install command for the user's platform and stop.
 - **Cast file unreadable / wrong version.** `cast_to_frames.py` accepts v1, v2, and v3; anything else → tell the user to re-record with a recent asciinema and stop.
 - **Whisper model missing.** The `transcribe.py` script lists the paths it searched. Tell the user to download with `whisper-cli --model-download <name>` and retry.
@@ -284,6 +398,7 @@ These are the defaults the skill applies without asking. The user can override a
 ## Notes
 
 - `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code at load time. If unset, derive paths from this SKILL.md's location.
+- `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}` (used in Phase 2 step 9 for the playbook fallback) resolves the same way — Claude Code exposes one such variable per installed plugin. If it's not set, derive the path by walking up from this SKILL.md to the plugins root and appending `remotion-video/skills/remotion-video/templates/default/`.
 - The split between this skill (cuts source material into a project) and the `remotion-video` skill (renders projects, owns the brand profile system) is deliberate. **Do not merge their SKILL.md files.** They share the same project directory and brand-profile system, but the workflows are different shapes — prompt-to-video vs. recording-to-video.
 - Per-video subdirectories (`videos/<slug>/`) keep PLAN, scenes, source-frames, transcript, screenshot checks under `.checks/`, and the rendered MP4 colocated. The top-level `src/Root.tsx` is the registry.
 - Frames live under `<project>/public/<slug>/frames/` so `staticFile()` resolves them. The duplicated PNGs under `videos/<slug>/source/frames/` are kept as the working copy in case you want to re-render or hand-tweak.

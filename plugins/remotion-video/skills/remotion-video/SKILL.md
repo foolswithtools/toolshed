@@ -1,7 +1,7 @@
 ---
 name: remotion-video
 description: Use this skill when the user asks to "make a video", "create a motion graphics video", "build a launch video / intro / outro / explainer with Remotion", or describes a video they want generated from a prompt. Scaffolds (or reuses) a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat with the user, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
-version: 0.5.0
+version: 0.6.0
 ---
 
 # Remotion Video Studio
