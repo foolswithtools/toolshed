@@ -1,7 +1,7 @@
 ---
 name: remotion-video
 description: Use this skill when the user asks to "make a video", "create a motion graphics video", "build a launch video / intro / outro / explainer with Remotion", or describes a video they want generated from a prompt. Scaffolds (or reuses) a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat with the user, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Remotion Video Studio
@@ -77,16 +77,30 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
 
 **Fresh project (first run):**
 
-1. Install Remotion's official agent skills so subsequent edits in this folder follow Remotion conventions. **Wrap the call in a timeout** — at the time of writing, this command sometimes hangs on an interactive "Install to" picker that ignores `--yes`/`-y`/`-g`. Don't let it block the run:
+1. **Install dependencies.** `create-video` writes `package.json` but does NOT run `npm install`. Without `node_modules`, every subsequent step in this phase (`npx remotion skills add`, `npx remotion add ...`) fails with cryptic npm errors. Always run this first:
    ```bash
-   # 30-second cap; if it hangs, kill cleanly and continue.
-   timeout 30 npx --yes remotion skills add < /dev/null || echo "remotion skills add timed out — continuing without it"
+   (cd <project> && npm install)
    ```
-   On macOS without GNU coreutils, `timeout` may be missing — fall back to `gtimeout` (`brew install coreutils`) or skip this step. The redirect from `/dev/null` prevents the picker from waiting on stdin.
+   On a fresh scaffold this takes ~30–60s. The Remotion CLI commands below all depend on it.
 
-   When it succeeds, this populates `<project>/.claude/skills/` with rules covering animations, sequencing, timing, transitions, audio, captions, fonts, and asset handling. **Defer to those rules for code patterns** when present. If the install timed out, scene quality relies entirely on this skill's instructions plus Remotion's docs at https://www.remotion.dev/docs — explicitly tell the user it timed out so they're not surprised by missing rules.
+2. Install Remotion's official agent skills so subsequent edits in this folder follow Remotion conventions. **Wrap the call in a timeout** — at the time of writing, this command sometimes hangs on an interactive "Install to" picker that ignores `--yes`/`-y`/`-g`. Don't let it block the run.
 
-2. Seed the brand profiles. Always copy `default/`. If the user asked for a different profile, also copy that one and make it the active profile; otherwise `default/` is active.
+   Use Python's `subprocess` for the timeout — it's available everywhere and avoids the macOS-without-coreutils gap (stock macOS ships neither `timeout` nor `gtimeout`):
+   ```bash
+   (cd <project> && python3 -c "
+import subprocess, sys
+try:
+    subprocess.run(['npx', '--yes', 'remotion', 'skills', 'add'],
+                   stdin=subprocess.DEVNULL, timeout=30, check=False)
+except subprocess.TimeoutExpired:
+    sys.stderr.write('remotion skills add timed out after 30s — continuing without it\n')
+")
+   ```
+   `stdin=DEVNULL` prevents the picker from waiting on stdin. The `try/except` swallows the timeout cleanly so the rest of Phase 2 still runs.
+
+   When it succeeds, this populates `<project>/.claude/skills/` with rules covering animations, sequencing, timing, transitions, audio, captions, fonts, and asset handling. **Defer to those rules for code patterns** when present. If it timed out, scene quality relies on this skill's instructions plus Remotion's docs at https://www.remotion.dev/docs — explicitly tell the user it timed out so they're not surprised by missing rules.
+
+3. Seed the brand profiles. Always copy `default/`. If the user asked for a different profile, also copy that one and make it the active profile; otherwise `default/` is active.
    ```bash
    mkdir -p <project>/src/brand/profiles
    cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/default <project>/src/brand/profiles/default
@@ -94,7 +108,9 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
    cp -R ${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/templates/foolswithtools-brand <project>/src/brand/profiles/foolswithtools-brand
    ```
 
-3. Write `<project>/src/brand/active.ts` so scenes import the active profile transparently:
+   **A profile shared by another user (not from the bundled templates):** if someone hands you a profile directory (zip, gist, file copy), drop it in at `<project>/src/brand/profiles/<name>/` directly. The toolshed deliberately does not ship designer-homage or third-party profiles publicly — those circulate via direct sharing — but the loading code doesn't care where a profile came from, only that it has `style-guide.ts` and `BRAND.md`.
+
+4. Write `<project>/src/brand/active.ts` so scenes import the active profile transparently:
    ```ts
    // active.ts — re-export from the active profile.
    // Switch profiles by changing the export source below (or by re-running the
@@ -103,7 +119,7 @@ If the user says "for work" or "personal" without a profile name, ask via **AskU
    export const ACTIVE_PROFILE = "<active-profile>";
    ```
 
-4. Add the helper packages most videos need:
+5. Add the helper packages most videos need:
    ```bash
    (cd <project> && npx --yes remotion add @remotion/transitions @remotion/media)
    ```
@@ -161,9 +177,15 @@ For each beat in the approved plan:
    ```bash
    (cd <project> && npx remotion studio)   # run_in_background
    ```
-   It serves on `http://localhost:3000` by default. Tell the user the URL and the composition `id` so they can preview.
+   It serves on `http://localhost:3000` by default (Studio picks the next free port if 3000 is taken — relay whichever port it actually printed).
 
-2. Accept comment-driven revisions and edit the relevant scene file(s). Examples of the kind of feedback to expect:
+2. **Tell the user what they're about to see.** First-time users open Studio, see a React UI auto-loading their composition, and have no idea what to do next. The hand-off message should orient them. Use this template, filling in the slug and URL:
+
+   > "Studio is now serving at `<url>`. The left sidebar lists every video composition in your project — for this run, the one called `<slug>` is loaded. The center area is the preview; click play (or hit space) to watch it through, drag the timeline at the bottom to scrub. Edit any file under `videos/<slug>/scenes/` and Studio hot-reloads — no need to restart it. When the cut looks right, tell me 'render it' and I'll run `npx remotion render <slug>` and report back where the MP4 lands. You don't render from inside Studio for this workflow — Studio is the preview, the render command is the ship."
+
+   This is load-bearing. The message above turns Studio from "an HTML page that's playing something" into "the preview tool I iterate against." Don't skip it.
+
+3. Accept comment-driven revisions and edit the relevant scene file(s). Examples of the kind of feedback to expect:
    - "Beat 1's card is covering my logo — shrink it 80% and shift right."
    - "Hold the final beat 2 seconds longer."
    - "Kill the grid background — it's distracting."
@@ -171,7 +193,7 @@ For each beat in the approved plan:
 
    Studio hot-reloads. After each edit, re-run `npx remotion still` for the affected scene and read the PNG so you don't rely solely on the user's eyes.
 
-3. Loop. Don't ask "is this done?" every iteration — let the user say "ship it" / "render it" / "looks good, render".
+4. Loop. Don't ask "is this done?" every iteration — let the user say "ship it" / "render it" / "looks good, render".
 
 ### Phase 6 — Render and promote
 

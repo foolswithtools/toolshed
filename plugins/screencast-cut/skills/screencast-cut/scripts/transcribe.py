@@ -34,7 +34,13 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+# whisper.cpp's whisper-cli only reads WAV. Anything else (mp3, m4a, aac,
+# opus, flac, mov, mp4 with embedded audio, etc.) needs to be transcoded
+# first. We delegate that to ffmpeg, which is already a documented prereq.
+WHISPER_NATIVE_EXTS = {".wav"}
 
 
 def find_whisper_bin(explicit):
@@ -79,6 +85,41 @@ def find_model(name, models_dir):
         + name
         + "` or pass --models-dir."
     )
+
+
+def ensure_wav(audio_path):
+    """Return a WAV path. If `audio_path` is already WAV, pass through.
+    Otherwise transcode via ffmpeg into a temp WAV and return that.
+
+    Returns (path, cleanup_callable). Caller should invoke cleanup when done.
+    """
+    if audio_path.suffix.lower() in WHISPER_NATIVE_EXTS:
+        return audio_path, (lambda: None)
+
+    if shutil.which("ffmpeg") is None:
+        raise SystemExit(
+            f"audio is {audio_path.suffix} but whisper.cpp only reads .wav. "
+            "ffmpeg is needed to transcode and is not on PATH. "
+            "Install with `brew install ffmpeg`."
+        )
+
+    tmp = Path(tempfile.mkstemp(prefix="transcribe-", suffix=".wav")[1])
+    cmd = [
+        "ffmpeg",
+        "-hide_banner", "-loglevel", "error",
+        "-y",
+        "-i", str(audio_path),
+        "-ar", "16000", "-ac", "1",
+        str(tmp),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        tmp.unlink(missing_ok=True)
+        raise SystemExit(
+            f"ffmpeg failed to transcode {audio_path} to wav:\n{result.stderr}"
+        )
+
+    return tmp, (lambda: tmp.unlink(missing_ok=True))
 
 
 def run_whisper(bin_path, audio, model_path, language, work_dir):
@@ -179,8 +220,12 @@ def main(argv):
 
     work_dir = args.output.parent
     work_dir.mkdir(parents=True, exist_ok=True)
-    raw_json_path = run_whisper(bin_path, args.audio, model_path, args.language, work_dir)
-    raw = json.loads(raw_json_path.read_text(encoding="utf-8"))
+    wav_audio, cleanup = ensure_wav(args.audio)
+    try:
+        raw_json_path = run_whisper(bin_path, wav_audio, model_path, args.language, work_dir)
+        raw = json.loads(raw_json_path.read_text(encoding="utf-8"))
+    finally:
+        cleanup()
     shaped = reshape(raw)
     shaped["model"] = shaped["model"] or args.model
 

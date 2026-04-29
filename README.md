@@ -29,6 +29,8 @@ To update later:
 /plugin marketplace update toolshed
 ```
 
+> **Run `/plugin marketplace update toolshed` before reporting any bug.** Plugins do not auto-update — once installed, your local copy stays pinned to whatever commit was current at install time. If a skill is doing something that doesn't match what you expect, the most likely cause is that you're running an older version. Update first; then if it still misbehaves, file the issue.
+
 ## Plugins
 
 ### youtube-transcript
