@@ -13,11 +13,16 @@ cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 WINDOW=3
 violations=0
 
-# All tracked files except CLAUDE.md and this script itself — both intentionally
-# describe the rule and would otherwise trip it.
+# All tracked files except files that exist to describe the rule (CLAUDE.md,
+# this script, planning documents that brief implementers on the rule) — they
+# would otherwise trip it.
 # Skip binary files (cheap mime heuristic below).
 self_path="scripts/check-no-anthropic-remotion-claim.sh"
-mapfile -t files < <(git ls-files | grep -v -x -e 'CLAUDE.md' -e "$self_path" || true)
+mapfile -t files < <(git ls-files | grep -v -x \
+  -e 'CLAUDE.md' \
+  -e "$self_path" \
+  -e 'plans/screencast-cut-expansion.md' \
+  || true)
 
 for f in "${files[@]}"; do
   [ -f "$f" ] || continue

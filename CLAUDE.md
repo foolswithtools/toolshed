@@ -14,7 +14,7 @@ This rule is enforced by `scripts/check-no-anthropic-remotion-claim.sh`, which f
 
 That means you can write "the `anthropic-brand` profile in `remotion-video`" freely. What you cannot write is bare "Anthropic" near bare "Remotion".
 
-`CLAUDE.md` and the script itself are exempted from the scan because they exist to describe the rule. Run it before every push:
+`CLAUDE.md`, the script itself, and `plans/screencast-cut-expansion.md` are exempted from the scan because they exist to describe the rule (the plan briefs implementers on it during slice work). Run it before every push:
 
 ```
 bash scripts/check-no-anthropic-remotion-claim.sh
