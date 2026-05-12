@@ -10,12 +10,16 @@ explodes the GIF into a PNG sequence preserving per-frame timing.
 
 Idle-gap detection runs against the cast event stream directly so the
 timing is exact (GIF frame quantization would lose sub-frame precision).
+Fumble detection scans the input (`i`) event stream for backspace runs
+and kill-line/kill-word keystrokes — both are surfaced as cut candidates
+the user can approve or reject in Phase 3.
 
 Usage:
     cast_to_frames.py <input.cast> <output_dir> [--fps N] [--theme NAME]
                                                 [--font-size N]
                                                 [--idle-speedramp SEC]
                                                 [--idle-cut SEC]
+                                                [--fumble-min-backspaces N]
 
 Outputs:
     <output_dir>/frames/00001.png ...
@@ -26,7 +30,11 @@ Outputs:
           "fps": int,
           "frame_count": int,
           "frame_times_s": [float, ...],     # cast-time of each PNG
-          "idle_gaps": [{"start_s", "end_s", "duration_s"}, ...],
+          "idle_gaps": [{"start_s", "end_s", "duration_s", "kind"}, ...],
+          "fumble_regions": [
+            {"start_s", "end_s", "duration_s", "kind": "fumble",
+             "trigger": "backspace_run"|"kill_line"}, ...
+          ],
           "events_summary": {"output_count": int, "input_count": int}
         }
 
@@ -108,6 +116,82 @@ def find_idle_gaps(events, speedramp_threshold, cut_threshold):
     return gaps
 
 
+BACKSPACE_BYTES = ("\x7f", "\x08")  # DEL and BS — both seen in practice
+KILL_LINE = "\x15"                   # Ctrl-U
+KILL_WORD = "\x17"                   # Ctrl-W
+
+
+def find_fumble_regions(events, min_backspaces=3):
+    """Find command-line segments where the user fumbled.
+
+    A *fumble* is a run of >= `min_backspaces` consecutive backspaces OR any
+    single Ctrl-U / Ctrl-W (kill-line / kill-word) — patterns that signal the
+    user is undoing what they just typed.
+
+    Segments are bounded by \\r / \\n in the input stream (command-line
+    boundaries) or by the start/end of the cast. When a segment contains
+    a fumble trigger, the whole segment is emitted as a cut candidate — the
+    viewer wants to skip the bad typing and the recovery typing together.
+
+    False positives are acceptable: Phase 3 of SKILL.md surfaces each region
+    for user approval before cutting.
+
+    Returns list of {"start_s", "end_s", "duration_s", "kind": "fumble",
+    "trigger": "backspace_run"|"kill_line"}.
+    """
+    chars = []  # (timestamp, char) one entry per input byte
+    for (t, code, data) in events:
+        if code != "i":
+            continue
+        for c in str(data):
+            chars.append((t, c))
+    if not chars:
+        return []
+
+    # Split into segments at \r / \n.
+    segments = []
+    seg_start = 0
+    for i, (_, c) in enumerate(chars):
+        if c in ("\r", "\n"):
+            if seg_start <= i - 1:
+                segments.append((seg_start, i - 1))
+            seg_start = i + 1
+    if seg_start <= len(chars) - 1:
+        segments.append((seg_start, len(chars) - 1))
+
+    regions = []
+    for lo, hi in segments:
+        consec_bs = 0
+        max_bs_run = 0
+        has_kill = False
+        for i in range(lo, hi + 1):
+            c = chars[i][1]
+            if c in BACKSPACE_BYTES:
+                consec_bs += 1
+                if consec_bs > max_bs_run:
+                    max_bs_run = consec_bs
+            else:
+                consec_bs = 0
+            if c == KILL_LINE or c == KILL_WORD:
+                has_kill = True
+
+        if max_bs_run < min_backspaces and not has_kill:
+            continue
+
+        start_t = chars[lo][0]
+        end_t = chars[hi][0]
+        if end_t <= start_t:
+            continue
+        regions.append({
+            "start_s": round(start_t, 4),
+            "end_s": round(end_t, 4),
+            "duration_s": round(end_t - start_t, 4),
+            "kind": "fumble",
+            "trigger": "kill_line" if has_kill else "backspace_run",
+        })
+    return regions
+
+
 def total_duration(events):
     if not events:
         return 0.0
@@ -172,6 +256,8 @@ def main(argv):
                     help="Idle gap >= this many seconds becomes a speed-ramp candidate.")
     ap.add_argument("--idle-cut", type=float, default=8.0,
                     help="Idle gap >= this many seconds becomes a hard-cut candidate.")
+    ap.add_argument("--fumble-min-backspaces", type=int, default=3,
+                    help="Run of >= this many consecutive backspaces becomes a fumble candidate.")
     args = ap.parse_args(argv)
 
     if not args.cast.is_file():
@@ -188,6 +274,7 @@ def main(argv):
 
     header, events = parse_cast(args.cast)
     gaps = find_idle_gaps(events, args.idle_speedramp, args.idle_cut)
+    fumbles = find_fumble_regions(events, args.fumble_min_backspaces)
 
     render_with_agg(args.cast, gif_path, args.theme, args.font_size, args.fps)
     explode_to_pngs(gif_path, frames_dir)
@@ -203,6 +290,7 @@ def main(argv):
         "frame_count": len(frame_times),
         "frame_times_s": frame_times,
         "idle_gaps": gaps,
+        "fumble_regions": fumbles,
         "events_summary": {"output_count": output_count, "input_count": input_count},
         "terminal": {
             "cols": header.get("width") or (header.get("term") or {}).get("cols"),
@@ -217,6 +305,10 @@ def main(argv):
     print(f"timing: {args.out_dir / 'timing.json'}")
     print(f"idle gaps: {len(gaps)} ({sum(1 for g in gaps if g['kind']=='cut')} cuts, "
           f"{sum(1 for g in gaps if g['kind']=='speedramp')} speed-ramps)")
+    if fumbles:
+        bs = sum(1 for f in fumbles if f["trigger"] == "backspace_run")
+        kl = sum(1 for f in fumbles if f["trigger"] == "kill_line")
+        print(f"fumble regions: {len(fumbles)} ({bs} backspace runs, {kl} kill-line/word)")
 
 
 if __name__ == "__main__":

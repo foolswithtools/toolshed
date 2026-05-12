@@ -170,7 +170,7 @@ The skill runs in seven phases. You don't drive them — Claude does — but kno
 |---|---|---|
 | 1 | Locating your Remotion project | "Found project at `~/videos-studio`. Slug: `demo-tutorial`." |
 | 2 | Reading your brand profile, classifying input, picking a playbook | A line naming your active profile and the detected genre (`tutorial` or `shortform`). |
-| 3 | Planning beats | A numbered beat list with durations, plus a small "Decisions" table showing which value came from config vs. playbook vs. your prompt. **Pause here — say "approve" or push back.** |
+| 3 | Planning beats | A numbered beat list with durations, plus a small "Decisions" table showing which value came from config vs. playbook vs. your prompt. For terminal casts, any fumbles (backspace runs, Ctrl-U / Ctrl-W) are listed as cut candidates you can approve or reject one-by-one. **Pause here — say "approve" or push back.** |
 | 4 | Building scene files + transcribing audio | Whisper runs locally (no network). Takes 10–60s depending on audio length. |
 | 5 | Studio preview | Claude opens `localhost:3000` in your browser. **Important: don't render from inside Studio.** Hit spacebar to play, scrub the timeline, comment on what's wrong. |
 | 6 | Render | One MP4 lands at `videos/<slug>/out.mp4`. Claude tells you the absolute path. |
@@ -187,6 +187,8 @@ Phase 3 is the only place you really need to push back. Once you approve the pla
 - **"It can't find my recording."** — Use absolute paths in your prompt (`~/Recordings/demo.mp4`), not relative ones, unless you're already `cd`-ed into the directory holding the file.
 
 - **Your audio is `.m4a` or `.mp3` and the transcription seems to fail silently.** — Should be auto-handled in screencast-cut 0.4.0+. If you're seeing it, run `/plugin marketplace update toolshed` — you're behind.
+
+- **Fumble detection misses something / flags something that wasn't really a fumble.** — It's a heuristic and false positives are expected (you'd rather see them in Phase 3 and skip than have the skill silently drop something). If your active profile is "trust the heuristic, just cut it," set `fumble_auto_cut: true` in your profile's `editing` block. If it's catching too few, lower `fumble_min_backspaces` (default 3 — 2 will pick up shorter typos).
 
 - **Screen recording, no auto-zoom on clicks.** — Most screen recorders (OBS, SimpleScreenRecorder, CleanShot, QuickTime) burn click highlights into the pixels but don't export click coordinates as a sidecar file. Without a sidecar, the skill can't auto-zoom on clicks. Two options: re-record with a tool that exports an event stream (Screenize on macOS is one), or hand-author a small `events.json` listing click timestamps and screen positions. Claude can walk you through the manual file. Without either, your MP4 still plays full-frame with captions over it — you just don't get the zoom layer.
 

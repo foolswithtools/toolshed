@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
 description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or a narration script or a click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, generates narration audio from a text script via ElevenLabs when no recorded audio is provided, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions, and its theme-approved voice roster) so output style matches the rest of the user's videos.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Screencast Cut
@@ -65,6 +65,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/config.json`. Defaults:
 | `zoom_hold_ms` | `1500` | Time held at `zoom_factor` after the click. |
 | `zoom_ramp_out_ms` | `400` | Time to ramp from `zoom_factor` back to 1×. |
 | `click_merge_window_ms` | `1500` | Click anchors within this window merge into one pan segment. |
+| `fumble_min_backspaces` | `3` | Run of >= this many consecutive backspaces becomes a fumble candidate. Below this, single/double-char corrections stay in. |
+| `fumble_auto_cut` | `false` | If `true`, skip the Phase 3 confirmation and auto-cut detected fumbles. A loud-shortform theme might flip this; tutorial themes typically leave it `false`. |
 | `tts_provider` | `"elevenlabs"` | Which TTS backend to use when the user passes `Script:`. Only `elevenlabs` is wired up today. |
 | `tts_default_model` | `"eleven_multilingual_v2"` | ElevenLabs model when neither prompt nor profile picks one. |
 | `tts_default_stability` | `0.45` | ElevenLabs `voice_settings.stability` default. |
@@ -177,7 +179,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/cast_to_frames.py" 
     --theme "<agg_theme>" \
     --font-size "<agg_font_size>" \
     --idle-speedramp "<idle_threshold_speedramp_seconds>" \
-    --idle-cut "<idle_threshold_cut_seconds>"
+    --idle-cut "<idle_threshold_cut_seconds>" \
+    --fumble-min-backspaces "<fumble_min_backspaces>"
 ```
 
 Read `videos/<slug>/source/timing.json`. Translate it into a beat plan, using the **final decisions resolved in Phase 2** (config + playbook + user + chapter_position):
@@ -189,6 +192,7 @@ Read `videos/<slug>/source/timing.json`. Translate it into a beat plan, using th
   - *Run* beats — stretches between idle gaps, played 1× speed. Apply the `cut_cadence_first_10s` / `cut_cadence_steady_state` bias when planning hold-lengths inside long runs (aggressive = sub-2s holds, calm = 20–40s holds).
   - *Speedramp* beats — gaps with `kind="speedramp"`, played at `speedramp_factor` × speed.
   - *Cut* beats — gaps with `kind="cut"` get replaced with a 1.0s "…" caption card (don't show frozen terminal for 8+ seconds).
+  - *Fumble cuts* — `fumble_regions` from `timing.json` are **cut candidates**, not auto-cuts (unless `fumble_auto_cut = true` in the resolved decisions). Surface each region with its `start_s`, `end_s`, `duration_s`, and `trigger` (`backspace_run` or `kill_line`). The user approves or rejects per-region in Phase 3; approved regions are implemented exactly like an idle `cut` (frames between `start_s` and `end_s` are dropped). If `fumble_auto_cut = true`, list the regions as already-cut in the plan rather than asking. Fumble regions can overlap idle gaps in unusual casts — when they do, the *union* is dropped (don't double-cut).
 - **Outro beat** (`outro_frames` from resolved decisions, shaped by `cta_shape`) — the active profile's outro card. `cta_shape = next-steps` → next-action text card; `cta_shape = question` → on-screen question card; `cta_shape = logo-card` → wordmark with no text ask.
 
 **Surface the plan to the user as a numbered list** with, per beat: duration, brand element used, and — for any beat whose shape came from the playbook — the playbook's inline justification. At the top of the plan, print a small "Decisions" table listing every key from step 11 with its **value** and **source** (`config` / `playbook` / `user` / `chapter_position`). Example:
@@ -206,6 +210,7 @@ Use **AskUserQuestion** for ambiguous high-level choices:
 - Aspect ratio if the cast width doesn't match the project default (terminals are wide; 9:16 needs a center-crop policy).
 - Whether to keep the long idle gaps as speed-ramps or cut entirely (offer both for any gap that straddles the threshold).
 - Whether to caption the terminal output too, or only the audio narration.
+- **For each fumble region** (when `fumble_auto_cut = false`): "cut this fumble?" with options *cut* / *keep* / *cut all remaining fumbles*. The third option lets the user stop reviewing if the heuristic looks right after the first few.
 
 Wait for "approve" before writing scene code.
 
@@ -405,6 +410,7 @@ These are the defaults the skill applies without asking. The user can override a
 
 - Idle gap >= `idle_threshold_speedramp_seconds` (default 2s) → speed-ramp at `speedramp_factor` (default 4×).
 - Idle gap >= `idle_threshold_cut_seconds` (default 8s) → hard cut, replaced with a 1s "…" beat.
+- Backspace run >= `fumble_min_backspaces` (default 3) OR a single Ctrl-U / Ctrl-W in a command-line segment → fumble region. Surfaced as a cut candidate; cut on approval (default) or auto-cut if `fumble_auto_cut = true`.
 - Click anchor → zoom segment: 300ms ramp-in, 1.5s hold at `zoom_factor` (default 1.6×), 400ms ramp-out, recentered on the click point.
 - Click anchors within 1.5s of each other → merge into one pan-between-points segment.
 - **Genre detection** (Phase 2 step 7):
