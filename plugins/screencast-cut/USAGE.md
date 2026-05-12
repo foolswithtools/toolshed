@@ -114,7 +114,7 @@ Three things, in increasing order of "must-have":
 |---|---|---|
 | **A recording** | Yes | A `.cast` from `asciinema rec`, or an `.mp4` / `.mov` screen capture from anything (CleanShot, QuickTime, OBS, Screenize). |
 | **Narration** | Recommended | Either an audio file (`Audio: ~/path/voice.m4a`) *or* a script (`Script: ~/path/script.txt`). With a script, the skill generates the audio via ElevenLabs and loudnorms it before captioning. Without either, you get a silent video. Pass both and `Audio:` wins (the recorded file is hand-tuned). |
-| **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data, your MP4 plays full-frame with captions over it — still fine. |
+| **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data, your MP4 plays full-frame (with idle stretches still auto-trimmed) and captions over it — still fine. |
 
 That's the whole input surface.
 
@@ -189,6 +189,8 @@ Phase 3 is the only place you really need to push back. Once you approve the pla
 - **Your audio is `.m4a` or `.mp3` and the transcription seems to fail silently.** — Should be auto-handled in screencast-cut 0.4.0+. If you're seeing it, run `/plugin marketplace update toolshed` — you're behind.
 
 - **Fumble detection misses something / flags something that wasn't really a fumble.** — It's a heuristic and false positives are expected (you'd rather see them in Phase 3 and skip than have the skill silently drop something). If your active profile is "trust the heuristic, just cut it," set `fumble_auto_cut: true` in your profile's `editing` block. If it's catching too few, lower `fumble_min_backspaces` (default 3 — 2 will pick up shorter typos).
+
+- **Video idle-trim cut the wrong stretches (or didn't cut anything).** — Idle detection for screen recordings uses ffmpeg's `freezedetect`. The two knobs are `video_idle_pixel_diff_threshold` (default 2.0 — lower = more sensitive, will trim quieter motion) and `video_idle_edge_mask_px` (default 40 — crops the right edge so a ticking menubar clock doesn't defeat detection). If a macOS recording's clock is wider than 40px (some larger displays), raise the mask to 80. If the whole video is incorrectly seen as static, you might have wallpaper animation or compression artefacts — raise the threshold to 5.0 and re-run.
 
 - **Screen recording, no auto-zoom on clicks.** — Most screen recorders (OBS, SimpleScreenRecorder, CleanShot, QuickTime) burn click highlights into the pixels but don't export click coordinates as a sidecar file. Without a sidecar, the skill can't auto-zoom on clicks. Two options: re-record with a tool that exports an event stream (Screenize on macOS is one), or hand-author a small `events.json` listing click timestamps and screen positions. Claude can walk you through the manual file. Without either, your MP4 still plays full-frame with captions over it — you just don't get the zoom layer.
 

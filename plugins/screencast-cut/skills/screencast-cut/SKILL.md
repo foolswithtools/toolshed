@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
 description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or a narration script or a click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, generates narration audio from a text script via ElevenLabs when no recorded audio is provided, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions, and its theme-approved voice roster) so output style matches the rest of the user's videos.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Screencast Cut
@@ -67,6 +67,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/config.json`. Defaults:
 | `click_merge_window_ms` | `1500` | Click anchors within this window merge into one pan segment. |
 | `fumble_min_backspaces` | `3` | Run of >= this many consecutive backspaces becomes a fumble candidate. Below this, single/double-char corrections stay in. |
 | `fumble_auto_cut` | `false` | If `true`, skip the Phase 3 confirmation and auto-cut detected fumbles. A loud-shortform theme might flip this; tutorial themes typically leave it `false`. |
+| `video_idle_sample_fps` | `4` | Frames per second to feed ffmpeg's `freezedetect` filter when scanning an MP4/MOV for idle stretches. Lower is faster. |
+| `video_idle_pixel_diff_threshold` | `2.0` | Pixel diff (0..255) below which consecutive frames are considered static. Mapped internally to `freezedetect`'s dB threshold. Lower is more sensitive. |
+| `video_idle_edge_mask_px` | `40` | Width in px of the right-edge strip to crop *before* idle detection (masks ticking menubar clocks on macOS recordings). Set to `0` to disable. |
 | `tts_provider` | `"elevenlabs"` | Which TTS backend to use when the user passes `Script:`. Only `elevenlabs` is wired up today. |
 | `tts_default_model` | `"eleven_multilingual_v2"` | ElevenLabs model when neither prompt nor profile picks one. |
 | `tts_default_stability` | `0.45` | ElevenLabs `voice_settings.stability` default. |
@@ -102,8 +105,8 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
 2. Read `<project>/src/brand/active.ts` to learn which profile is active. If the user said "use the X profile" in this prompt, follow the same switch logic the `remotion-video` skill uses (copy the template if missing, rewrite `active.ts` to re-export from it). Tell the user you switched.
 3. Read the active profile's `BRAND.md` so you know the typography, palette, motion vocabulary, and any promoted components.
 4. **Classify the input** by extension:
-   - `.cast` → asciinema path (Phase 3a).
-   - `.mp4` / `.mov` → screen-capture path (Phase 3b).
+   - `.cast` → asciinema path (Phase 3a). `cast_to_frames.py` produces the timing manifest.
+   - `.mp4` / `.mov` → screen-capture path (Phase 3b). `video_to_frames.py` produces the timing manifest (idle-trim via ffmpeg `freezedetect`). The downstream beat-planning code consumes both manifests identically.
    - Anything else → ask the user; don't guess.
 5. **Resolve the narration source.** Two mutually-exclusive shapes the user can supply:
    - **`Audio:` <path>** — a pre-recorded `.m4a`/`.mp3`/`.wav`. Note the path; you'll feed it to `transcribe.py` in Phase 4.
@@ -228,6 +231,25 @@ ffprobe -v error -select_streams v:0 \
 
 Note the dimensions, fps, and duration. If the dimensions don't match the project's composition (terminals are usually 16:9; the project might be 9:16), surface this and ask whether to letterbox, center-crop, or change the composition aspect ratio for this video.
 
+#### Detect idle stretches
+
+Same idle-trim treatment as the `.cast` path: long static stretches in a screen recording (reading a page, dwelling on a result) get speed-ramped or hard-cut. Run:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/video_to_frames.py" \
+    "<input.mp4>" \
+    "<project>/videos/<slug>/source/" \
+    --sample-fps "<video_idle_sample_fps>" \
+    --idle-speedramp "<idle_threshold_speedramp_seconds>" \
+    --idle-cut "<idle_threshold_cut_seconds>" \
+    --pixel-diff-threshold "<video_idle_pixel_diff_threshold>" \
+    --edge-mask-px "<video_idle_edge_mask_px>"
+```
+
+The script writes `<project>/videos/<slug>/source/timing.json` in the same shape `cast_to_frames.py` emits — `idle_gaps` with `start_s`/`end_s`/`duration_s`/`kind` — so the downstream scene planner doesn't care whether the source was a cast or a video.
+
+It uses ffmpeg's `freezedetect` filter under the hood (faster than pixel-diffing in Python), with a configurable right-edge crop applied first to mask out ticking menubar clocks that would otherwise defeat static detection.
+
 #### Resolve click anchors
 
 Run the events parser if the user has a structured event source:
@@ -269,11 +291,14 @@ Use the **final decisions resolved in Phase 2** for intro/outro/captions/cta_sha
 - **Intro beat** (`intro_frames` from resolved decisions) — wordmark hero from the active profile. Skip if `intro_frames = 0`.
 - **Chapter card beat** — only if a chapter title was extracted in Phase 2 step 8. Insert between intro and first content beat. Duration ~2s.
 - **Recap-and-continue beat** (only if `chapter_position = middle`) — 7s, replaces the cold-open hook for chapters in the middle of a series.
-- **Content beats** built from the MP4 plus zoom anchors:
+- **Content beats** built from the MP4 plus zoom anchors plus idle gaps:
   - Default: the MP4 plays at 1× behind the active profile's caption layer.
+  - For each `idle_gaps` entry in `timing.json` with `kind="speedramp"`, play that stretch at `speedramp_factor` × speed via `<OffthreadVideo playbackRate=...>`.
+  - For each `idle_gaps` entry with `kind="cut"`, drop the stretch and insert a `BlurredFreezeCard` beat (~1s) showing a blurred copy of the last frame before the cut with a small "skipped ahead" hint — terminal-style "…" reads weird over a video aesthetic, so this is the video equivalent.
   - For each click anchor, plan a *zoom segment*: zoom-in starting **300ms before** the click, hold at the active zoom for **1.5s**, zoom-out **400ms** after. Use the active profile's easing presets (e.g. `easings.zoomIn`, `easings.zoomOut` if defined; else `Easing.bezier(0.4, 0, 0.2, 1)`).
   - Zoom level: 1.6× by default (configurable via `zoom_factor` in config). Center the zoom on the click coordinate, clamping the visible window so it doesn't drift outside the source frame.
   - Adjacent click anchors within 1.5s of each other → merge into one zoom segment that pans between the two anchor points.
+  - If an idle gap overlaps a zoom segment, the zoom wins (the user pointed at something — preserve that). Trim the gap to the portion outside the zoom.
 - **Outro beat** (`outro_frames` from resolved decisions, shaped by `cta_shape`) — call-to-action card from the active profile.
 
 Surface the plan as a numbered list including each click anchor's `t_s` and `label`. Print the Decisions table at the top (same format as Phase 3a). Use **AskUserQuestion** for:
@@ -328,6 +353,8 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
 
    Additional scenes for the MP4 path:
    - `ScreenPlayback.tsx` — `<OffthreadVideo src={staticFile(\`<slug>/source.mp4\`)} startFrom={...} endAt={...} />`. Copy the MP4 once into `<project>/public/<slug>/source.mp4` so `staticFile()` resolves it.
+   - `VideoRun.tsx` — speed-ramped wrapper around `<OffthreadVideo>` for any `idle_gaps` entry with `kind="speedramp"`. Maps the gap's `[start_s, end_s]` window to a `playbackRate = speedramp_factor`. Treat un-ramped stretches as plain `ScreenPlayback` to avoid stutter at the join.
+   - `BlurredFreezeCard.tsx` — replaces `idle_gaps` entries with `kind="cut"`. Renders an `<Img>` of the last full-rate frame before the cut (use Remotion's `<Img>` plus a CSS `filter: blur(24px)` on top of the freeze-frame, or `staticFile` a pre-rendered still you grab via `ffmpeg -ss <end_s-0.1> -frames:v 1`) with a small caption like *"…skipped 12s"* in the profile's accent. Duration ~1s. Don't reuse `IdleCutCard.tsx`'s plain "…" — over a video it reads as a glitch.
    - `ZoomedSection.tsx` — wraps `ScreenPlayback` in a transform that interpolates `scale` from 1 → `zoom_factor` → 1 around a click anchor, with `translateX`/`translateY` set so the click point stays centered (clamp the offset so the visible window stays inside the source). Read anchor `t_s` and `x`/`y` from `zoom_anchors.json`. Use the active profile's easings.
    - The same `Captions.tsx` used on the asciinema path works here too — `transcript.json` is the source of truth regardless of input shape.
 
@@ -411,6 +438,7 @@ These are the defaults the skill applies without asking. The user can override a
 - Idle gap >= `idle_threshold_speedramp_seconds` (default 2s) → speed-ramp at `speedramp_factor` (default 4×).
 - Idle gap >= `idle_threshold_cut_seconds` (default 8s) → hard cut, replaced with a 1s "…" beat.
 - Backspace run >= `fumble_min_backspaces` (default 3) OR a single Ctrl-U / Ctrl-W in a command-line segment → fumble region. Surfaced as a cut candidate; cut on approval (default) or auto-cut if `fumble_auto_cut = true`.
+- **Screen-recording idle stretches** (MP4/MOV input) honor the same `idle_threshold_*` thresholds as terminal casts. Detected via ffmpeg's `freezedetect` on a 4 fps sample with a 40px right-edge crop (mask the menubar clock). Speed-ramped stretches play through `VideoRun.tsx`; hard cuts insert a `BlurredFreezeCard` rather than the terminal "…" card.
 - Click anchor → zoom segment: 300ms ramp-in, 1.5s hold at `zoom_factor` (default 1.6×), 400ms ramp-out, recentered on the click point.
 - Click anchors within 1.5s of each other → merge into one pan-between-points segment.
 - **Genre detection** (Phase 2 step 7):
@@ -444,6 +472,8 @@ These are the defaults the skill applies without asking. The user can override a
 - **ElevenLabs API key missing.** `script_to_audio.py` already emits an actionable message. Pass it through to the user verbatim; do not echo the contents of any env var when reporting.
 - **ElevenLabs API call failed.** HTTP error from the TTS endpoint (auth, quota, rate limit, server error). Surface the status code and the body excerpt the script printed. Common cases: 401 (key invalid), 422 (voice_id wrong or model not available), 429 (rate limit — retry once after 5s before giving up).
 - **Both `Audio:` and `Script:` given.** Warn once that `Script:` was ignored, proceed with `Audio:`. Do not generate audio from the script "just in case."
+- **Video idle detection returned zero gaps but the MP4 is obviously slow.** Two common causes: a ticking menubar clock that defeats `freezedetect` (raise `video_idle_edge_mask_px` past the clock width — macOS clocks are ~60–80px wide depending on display scaling), or the threshold is too sensitive (lower `video_idle_pixel_diff_threshold` from 2.0 to 1.0 to catch quieter stretches). Surface both knobs to the user before proposing a re-run.
+- **Video idle detection returned too many gaps / cut the wrong stretches.** Raise `video_idle_pixel_diff_threshold` (less sensitive — more motion required to count as "not static"). If the source has heavy visual noise (compression artefacts, animated wallpapers), 5.0 is a reasonable upper bound before you should question whether idle-trim is the right treatment for this video.
 
 ## Notes
 
