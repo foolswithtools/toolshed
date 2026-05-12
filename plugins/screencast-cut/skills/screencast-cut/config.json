@@ -13,5 +13,13 @@
   "zoom_ramp_in_ms": 300,
   "zoom_hold_ms": 1500,
   "zoom_ramp_out_ms": 400,
-  "click_merge_window_ms": 1500
+  "click_merge_window_ms": 1500,
+  "tts_provider": "elevenlabs",
+  "tts_default_model": "eleven_multilingual_v2",
+  "tts_default_stability": 0.45,
+  "tts_default_similarity_boost": 0.75,
+  "tts_default_style": 0.0,
+  "tts_loudnorm_i": -18,
+  "tts_loudnorm_tp": -2,
+  "tts_loudnorm_lra": 11
 }

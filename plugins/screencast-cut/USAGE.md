@@ -113,10 +113,22 @@ Three things, in increasing order of "must-have":
 | Asset | Required? | Notes |
 |---|---|---|
 | **A recording** | Yes | A `.cast` from `asciinema rec`, or an `.mp4` / `.mov` screen capture from anything (CleanShot, QuickTime, OBS, Screenize). |
-| **An audio narration** | Recommended | A separate file — `.m4a`, `.mp3`, `.wav`. Without it, you get a silent video with no captions. With it, you get word-level synced captions. |
+| **Narration** | Recommended | Either an audio file (`Audio: ~/path/voice.m4a`) *or* a script (`Script: ~/path/script.txt`). With a script, the skill generates the audio via ElevenLabs and loudnorms it before captioning. Without either, you get a silent video. Pass both and `Audio:` wins (the recorded file is hand-tuned). |
 | **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data, your MP4 plays full-frame with captions over it — still fine. |
 
 That's the whole input surface.
+
+### One-time setup for the `Script:` path
+
+If you'll pass `Script:` instead of `Audio:`, the skill needs an ElevenLabs API key. Three ways to provide it; the skill checks in order:
+
+1. `ELEVENLABS_API_TOKEN` in your shell environment.
+2. `ELEVENLABS_API_KEY` (common alternate name).
+3. A line `ELEVENLABS_API_TOKEN=...` in `~/.config/screencast-cut/secrets.env` (plugin-scoped fallback so you don't have to touch `.envrc`).
+
+The skill never echoes the token. If it can't find one, it stops with an actionable message and tells you which paths it checked.
+
+**No default voice.** The skill picks a voice from your prompt (`Voice: Bill`) or from your active profile's `tts.voice`. If neither is set, it stops — better than picking a voice for you. Run `python3 ~/.claude/plugins/marketplaces/toolshed/plugins/screencast-cut/skills/screencast-cut/scripts/list_voices.py` to see the voices your API key has access to.
 
 ---
 
@@ -127,6 +139,12 @@ Open Claude Code in your Remotion project directory and paste a prompt like one 
 ### Tutorial from a terminal recording
 
 > "Use the screencast-cut skill. Source: `~/Recordings/demo.cast`. Audio: `~/Recordings/voiceover.m4a`. Make a tutorial showing how to use jq."
+
+### Tutorial from a terminal recording, narration generated from a script
+
+> "Use the screencast-cut skill. Source: `~/Recordings/demo.cast`. Script: `~/Recordings/jq-narration.md`. Voice: Bill. Make a 45-second tutorial."
+
+(`Voice:` is optional if your active profile already declares a `tts.voice`.)
 
 ### Tutorial from a screen recording
 
@@ -195,7 +213,7 @@ If after all three it's still stuck, file an issue at https://github.com/foolswi
 So you don't ask and get a polite "no":
 
 - It won't record your screen for you. Use CleanShot, Screenize, asciinema, OBS, or QuickTime.
-- It won't write your narration script or generate the voiceover audio. Bring your own audio.
+- It won't write your narration script. Bring your own words. (It *will* turn a script into audio via ElevenLabs if you pass `Script:` and have an API key set.)
 - It won't generate background music. Use the `music-grab` plugin (also in toolshed) for that.
 - It won't render the final MP4 from inside Remotion Studio. Studio is for previewing. Claude runs the render via the CLI.
 - It won't make a video from "just a topic" — it edits source material. For prompt-from-scratch motion graphics, that's the `remotion-video` skill.

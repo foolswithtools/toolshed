@@ -21,7 +21,7 @@
     {
       "name": "screencast-cut",
       "source": "./plugins/screencast-cut",
-      "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them, transcribes audio with Whisper for word-level captions, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile so output matches the rest of your videos."
+      "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them, generates narration audio from a text script via ElevenLabs (when you pass Script: instead of Audio:), transcribes audio with Whisper for word-level captions, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile (including its theme-approved voice roster) so output matches the rest of your videos."
     },
     {
       "name": "music-grab",

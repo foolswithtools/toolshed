@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
-description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions) so output style matches the rest of the user's videos.
-version: 0.5.0
+description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or a narration script or a click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, generates narration audio from a text script via ElevenLabs when no recorded audio is provided, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions, and its theme-approved voice roster) so output style matches the rest of the user's videos.
+version: 0.6.0
 ---
 
 # Screencast Cut
@@ -23,8 +23,9 @@ If the user is asking for purely synthetic motion graphics (no source recording)
 ## What this skill does *not* do
 
 - It does not render the final MP4 — it scaffolds a Remotion project and hands off to the `remotion-video` workflow (Phase 5 preview, Phase 6 render). Do not duplicate render logic here.
-- It does not generate music or voiceover. Audio comes from the user.
+- It does not generate music. Music comes from the user (`music-grab` plugin can help).
 - It does not invent its own terminal renderer. `agg` does that. This skill orchestrates.
+- It does not write the narration script for you. If the user passes `Script:`, the skill generates *audio* from that script via ElevenLabs — but the words are theirs.
 
 ## Prerequisites
 
@@ -40,6 +41,8 @@ Check up-front and stop with a clear install message if missing:
 For Linux / Docker: equivalent packages — `agg` via `cargo install --git https://github.com/asciinema/agg`, ffmpeg/whisper.cpp via the distro package manager.
 
 A whisper ggml model (default `base.en`) must be on disk. `whisper-cli --model-download base.en` fetches it; the script also looks under `/opt/homebrew/share/whisper-cpp/` and `~/.cache/whisper.cpp/`.
+
+**For the TTS path (only when the user supplies `Script:` instead of `Audio:`):** an ElevenLabs API key is required — no install, just a token. The skill reads it from (in order): `ELEVENLABS_API_TOKEN` env var, `ELEVENLABS_API_KEY` env var, then `~/.config/screencast-cut/secrets.env` (lines of the form `KEY=value`). If none resolve, `script_to_audio.py` exits with an actionable message and never echoes the token. No other TTS provider is wired up — `config.json` has a `tts_provider` field to make adding one cheap later, but only `elevenlabs` is implemented today.
 
 ## Configuration
 
@@ -62,13 +65,22 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/config.json`. Defaults:
 | `zoom_hold_ms` | `1500` | Time held at `zoom_factor` after the click. |
 | `zoom_ramp_out_ms` | `400` | Time to ramp from `zoom_factor` back to 1×. |
 | `click_merge_window_ms` | `1500` | Click anchors within this window merge into one pan segment. |
+| `tts_provider` | `"elevenlabs"` | Which TTS backend to use when the user passes `Script:`. Only `elevenlabs` is wired up today. |
+| `tts_default_model` | `"eleven_multilingual_v2"` | ElevenLabs model when neither prompt nor profile picks one. |
+| `tts_default_stability` | `0.45` | ElevenLabs `voice_settings.stability` default. |
+| `tts_default_similarity_boost` | `0.75` | ElevenLabs `voice_settings.similarity_boost` default. |
+| `tts_default_style` | `0.0` | ElevenLabs `voice_settings.style` default. |
+| `tts_loudnorm_i`, `tts_loudnorm_tp`, `tts_loudnorm_lra` | `-18`, `-2`, `11` | ffmpeg `loudnorm` target for generated narration. Themes typically override. |
+
+**No default voice on purpose.** `config.json` does *not* carry a `tts_default_voice` / `tts_default_voice_id`. Voice resolution is: prompt `Voice:` → active profile's `tts.voice_id` → **hard error**. We don't pick a voice for the user silently — the wrong voice is more jarring than the wrong color.
 
 User overrides per call:
 - "use the karaoke captions" / "for TikTok" → `caption_style=karaoke`.
 - "skip the intro" → `default_intro_frames=0`. Same shape for outro.
 - "don't speed-ramp anything" → `idle_threshold_speedramp_seconds=999`.
+- "use the Matilda voice" → `Voice: Matilda` (resolved through the active profile's `tts.alternates`, or any voice the API key sees).
 
-**Precedence note:** several of these defaults — `default_intro_frames`, `default_outro_frames`, `caption_style`, and the cut-cadence heuristics — get overridden by the active profile's **playbook** for the detected genre (Phase 2, step 8 onward). Final precedence is **config defaults < playbook overrides < user prompt overrides**. The plan you surface in Phase 3 must label which source each decision came from so the user can push back on the right layer.
+**Precedence note:** several of these defaults — `default_intro_frames`, `default_outro_frames`, `caption_style`, the cut-cadence heuristics, and the entire `tts.*` block — get overridden by the active profile's **`tts`/`editing` exports** and its **playbook** for the detected genre (Phase 2, step 8 onward). Final precedence is **config defaults < profile `tts`/`editing` exports < playbook overrides < user prompt overrides**. The plan you surface in Phase 3 must label which source each decision came from so the user can push back on the right layer.
 
 ## The six-phase workflow
 
@@ -91,7 +103,20 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
    - `.cast` → asciinema path (Phase 3a).
    - `.mp4` / `.mov` → screen-capture path (Phase 3b).
    - Anything else → ask the user; don't guess.
-5. If the user provided a separate audio file (`.m4a`/`.mp3`/`.wav`) for narration, note its path. If audio is embedded in the MP4, you'll extract it with ffmpeg in Phase 4.
+5. **Resolve the narration source.** Two mutually-exclusive shapes the user can supply:
+   - **`Audio:` <path>** — a pre-recorded `.m4a`/`.mp3`/`.wav`. Note the path; you'll feed it to `transcribe.py` in Phase 4.
+   - **`Script:` <path>** — a `.txt`/`.md` of narration text. You'll generate audio via `script_to_audio.py` in Phase 4 (ElevenLabs TTS + ffmpeg loudnorm) before transcription.
+
+   **Precedence when both are present:** `Audio:` wins. Warn the user once that `Script:` was ignored and proceed. (The recorded audio is hand-tuned; treating it as the fallback would let a stale script silently override it.)
+
+   If audio is embedded in the MP4 and the user passed neither `Audio:` nor `Script:`, extract it with ffmpeg in Phase 4 and treat it as `Audio:`.
+
+   **For the `Script:` path, resolve the voice now.** Three steps:
+   1. **Voice resolution** — prompt `Voice: <name>` > active profile's `tts.voice` > **hard error** (no plugin-level default; tell the user to either add `Voice:` to the prompt or define a `tts` block in their active profile's `style-guide.ts`).
+   2. **Roster check** — if the prompt picked a voice that's neither the profile's `tts.voice` nor any value in `tts.alternates`, surface a note in the Phase 3 decisions table: *"voice 'River' is outside the `<active-profile>` approved roster (`<voice>`, alternates: `<alternates>`)."* This is informational, not a block.
+   3. **Name → ID** — if the resolved voice is a human-readable name (not a voice ID), look it up in `~/.cache/screencast-cut/voices.json`. If the cache doesn't exist or doesn't have the name, run `scripts/list_voices.py` (it populates the cache from the ElevenLabs API). Fail with an actionable message if the name doesn't resolve.
+
+   Save the resolved `voice_id`, model, and voice_settings for Phase 4. Surface them in the Phase 3 decisions table.
 6. **For MP4 input, locate click-event data.** Check for any of the following alongside the MP4:
    - A sibling `.screenize/` directory (polyrecorder-v2 package from the [Screenize](https://github.com/syi0808/screenize) recorder).
    - A sibling `events.json` written by the user by hand (manual schema — see Phase 3b).
@@ -256,7 +281,19 @@ Wait for "approve" before writing scene code.
 
 Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
 
-1. **Transcribe audio** if the user provided one:
+1. **Generate narration audio** if the user passed `Script:` (skip if `Audio:` was given). Resolve the voice via the rules in Phase 2 step 5; pull `loudnorm` and `voice_settings` from the profile's `tts` block when present, else from `config.json`:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/script_to_audio.py" \
+       "<script>" "<project>/videos/<slug>/source/narration.wav" \
+       --voice-id "<resolved_voice_id>" \
+       --voice-name "<resolved_voice_name>" \
+       --model "<resolved_model>" \
+       --stability "<stability>" --similarity-boost "<similarity_boost>" --style "<style>" \
+       --loudnorm-i "<I>" --loudnorm-tp "<TP>" --loudnorm-lra "<LRA>"
+   ```
+   The script writes a sidecar `narration.wav.json` manifest (voice, voice_id, model, characters_used, loudnorm target). Use the generated WAV as the `<audio>` input to step 2 below.
+
+2. **Transcribe audio** (recorded `Audio:` or freshly generated from `Script:`):
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/transcribe.py" \
        "<audio>" "<project>/videos/<slug>/source/transcript.json" \
@@ -264,13 +301,13 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
    ```
    Copy the audio file into `<project>/public/<slug>/voiceover.<ext>` so `staticFile()` can find it.
 
-2. **Copy frames** so Remotion can resolve them via `staticFile()`:
+3. **Copy frames** so Remotion can resolve them via `staticFile()`:
    ```bash
    mkdir -p <project>/public/<slug>/frames
    cp <project>/videos/<slug>/source/frames/*.png <project>/public/<slug>/frames/
    ```
 
-3. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode. Reuse promoted components from `<project>/src/brand/profiles/<active>/components/` when applicable.
+4. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode. Reuse promoted components from `<project>/src/brand/profiles/<active>/components/` when applicable.
 
    The scene shapes you'll typically need (asciinema path):
    - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener. Omit if `intro_frames = 0`.
@@ -289,11 +326,11 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
    - `ZoomedSection.tsx` — wraps `ScreenPlayback` in a transform that interpolates `scale` from 1 → `zoom_factor` → 1 around a click anchor, with `translateX`/`translateY` set so the click point stays centered (clamp the offset so the visible window stays inside the source). Read anchor `t_s` and `x`/`y` from `zoom_anchors.json`. Use the active profile's easings.
    - The same `Captions.tsx` used on the asciinema path works here too — `transcript.json` is the source of truth regardless of input shape.
 
-4. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` as the sum of beat durations minus transition overlaps.
+5. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` as the sum of beat durations minus transition overlaps.
 
-5. **Register** the master composition in `<project>/src/Root.tsx` with composition `id` = the slug.
+6. **Register** the master composition in `<project>/src/Root.tsx` with composition `id` = the slug.
 
-6. **PNG-verify** each scene with `npx remotion still <slug> --frame=<midpoint> --scale=0.25 --output=videos/<slug>/.checks/<scene>.png` and read the PNG. Fix off-screen elements / text-overflow before moving on.
+7. **PNG-verify** each scene with `npx remotion still <slug> --frame=<midpoint> --scale=0.25 --output=videos/<slug>/.checks/<scene>.png` and read the PNG. Fix off-screen elements / text-overflow before moving on.
 
 ### Phase 5 — Iterate in Studio
 
@@ -396,6 +433,11 @@ These are the defaults the skill applies without asking. The user can override a
 - **MP4 with no event data.** Tell the user up-front. CleanShot X, QuickTime, and the macOS Screenshot app don't export click coordinates. Two paths: re-record with a tool that does (Screenize is one), or have them author a manual `events.json` from memory or by stepping through the MP4. Don't silently skip — offer the choice.
 - **`parse_events.py` formatVersion mismatch.** The polyrecorder schema is young and will move. Surface the actual `formatVersion` you got vs. the one expected and tell the user to either update their recorder or downgrade. Don't try to interpret an unknown schema version.
 - **Zoom would clip the visible window.** Pre-validate before writing scenes: for each anchor, check that a window of size `1/zoom_factor` centered on `(x, y)` stays inside `[0, 1]`. If not, ask the user (via AskUserQuestion) whether to recenter, reduce zoom, or skip that anchor.
+- **`Script:` given but no voice resolvable.** No `Voice:` in the prompt and no `tts.voice` in the active profile. Stop with an actionable message: *"`<slug>` needs a voice. Either add `Voice: <name>` to your prompt or define a `tts` block in `src/brand/profiles/<active>/style-guide.ts`. Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/list_voices.py` to see voices your API key has access to."* Do not fall back to a hard-coded plugin default.
+- **`Script:` given but voice name doesn't resolve to a voice_id.** The cache at `~/.cache/screencast-cut/voices.json` doesn't have the name and a `--refresh` fetch also doesn't surface it. The voice is either misspelled or not available to the API key. Surface both the requested name and the nearest matches in the cache, and stop.
+- **ElevenLabs API key missing.** `script_to_audio.py` already emits an actionable message. Pass it through to the user verbatim; do not echo the contents of any env var when reporting.
+- **ElevenLabs API call failed.** HTTP error from the TTS endpoint (auth, quota, rate limit, server error). Surface the status code and the body excerpt the script printed. Common cases: 401 (key invalid), 422 (voice_id wrong or model not available), 429 (rate limit — retry once after 5s before giving up).
+- **Both `Audio:` and `Script:` given.** Warn once that `Script:` was ignored, proceed with `Audio:`. Do not generate audio from the script "just in case."
 
 ## Notes
 
