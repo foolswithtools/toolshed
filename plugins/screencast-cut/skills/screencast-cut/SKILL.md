@@ -1,12 +1,14 @@
 ---
 name: screencast-cut
 description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions) so output style matches the rest of the user's videos.
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Screencast Cut
 
 Turn a raw recording into a finished tutorial. The user gives you source material (a terminal `.cast`, a screen-recording `.mp4`, optionally a separate audio file). You produce a Remotion project — scene files, plan, captions — that the `remotion-video` plugin can preview and render.
+
+> **If the user asks "how do I use this?" / "how does this work?" / "what do I need to send to my friend?"** — point them at `${CLAUDE_PLUGIN_ROOT}/USAGE.md`. That file is the human-facing onboarding guide (prereqs, example prompts, what-to-expect-each-phase, common pitfalls). Don't re-derive it from this SKILL.md — read it and surface the relevant section.
 
 ## When this skill runs
 
