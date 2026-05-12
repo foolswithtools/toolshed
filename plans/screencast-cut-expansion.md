@@ -33,7 +33,7 @@ The hard constraint from `CLAUDE.md` still applies: no committed file may state 
 
 ---
 
-## Slice A — ElevenLabs TTS inside screencast-cut
+## ~~Slice A — ElevenLabs TTS inside screencast-cut~~ — shipped in `4819dbd` (plugin 0.6.0)
 
 **What:** Accept a narration *script* (text) as an alternative to a narration *audio file*. If given a script, generate the audio via ElevenLabs, normalize it with `ffmpeg loudnorm`, then continue down the existing audio path (Whisper transcription → caption alignment → render).
 
@@ -145,7 +145,7 @@ Should produce `videos/jq-tutorial/out.mp4` with Bill-voiced narration, loudnorm
 
 ---
 
-## Slice B — Backspace / fumble detection in terminal casts
+## ~~Slice B — Backspace / fumble detection in terminal casts~~ — shipped in `724438c` (plugin 0.7.0)
 
 **What:** Detect "fumble-and-retype" regions in `.cast` event streams (sequences of backspace characters followed by retyping) and surface them as cut candidates alongside the existing idle-gap detection.
 
@@ -207,7 +207,7 @@ Run `cast_to_frames.py` against it. Verify the output JSON contains one entry un
 
 ---
 
-## Slice C — Screen-recording auto-trim (idle-frame detection for MP4/MOV)
+## ~~Slice C — Screen-recording auto-trim (idle-frame detection for MP4/MOV)~~ — shipped in `2b1d77d` (plugin 0.8.0)
 
 **What:** Apply terminal-style "auto-trim idle stretches" editing to screen recordings (desktop / browser). Today the plugin accepts `.mp4` / `.mov` but only does auto-zoom on clicks (if a sidecar events.json exists). It does *not* speed-ramp or cut idle stretches. We add that.
 
