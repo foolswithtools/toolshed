@@ -11,6 +11,7 @@ This rule is enforced by `scripts/check-no-anthropic-remotion-claim.sh`, which f
 - `anthropic-brand` (a profile name)
 - `anthropics/skills`, `anthropics/` (the public repo)
 - `remotion-video` (this plugin's name)
+- `check-no-anthropic-remotion-claim` (this guardrail script's filename, so docs can reference the pre-push command)
 
 That means you can write "the `anthropic-brand` profile in `remotion-video`" freely. What you cannot write is bare "Anthropic" near bare "Remotion".
 

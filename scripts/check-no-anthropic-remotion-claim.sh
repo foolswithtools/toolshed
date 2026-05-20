@@ -40,6 +40,7 @@ for f in "${files[@]}"; do
       gsub(/anthropics\/skills/, "", s)
       gsub(/anthropics\//, "", s)
       gsub(/remotion-video/, "", s)
+      gsub(/check-no-anthropic-remotion-claim/, "", s)
       return s
     }
     BEGIN { last_a = -10000; last_r = -10000 }

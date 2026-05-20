@@ -29,7 +29,7 @@ These three slices together close the gap between "what `screencast-cut` does to
 
 The two existing thresholds in `config.json` (`idle_threshold_speedramp_seconds`, `idle_threshold_cut_seconds`) are global defaults today. After this work they remain global *defaults*, but a theme can override any of them. The precedence stays: `config.json` < `playbook` < theme overrides < per-video prompt. Document this clearly in `SKILL.md`.
 
-The hard constraint from `CLAUDE.md` still applies: no committed file may state or imply that Anthropic uses Remotion. Run `bash scripts/check-no-anthropic-remotion-claim.sh` before every push.
+The brand-claim guardrail from `CLAUDE.md` still applies — see that file for the exact rule and the list of safe tokens. Run `bash scripts/check-no-anthropic-remotion-claim.sh` before every push.
 
 ---
 
@@ -355,7 +355,7 @@ python3 -m json.tool plugins/screencast-cut/skills/screencast-cut/config.json > 
 python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 ```
 
-Re-read every edited Markdown file with the lens "does this imply Anthropic uses Remotion?"
+Re-read every edited Markdown file through the brand-claim lens defined in `CLAUDE.md`.
 
 ### Documentation
 
