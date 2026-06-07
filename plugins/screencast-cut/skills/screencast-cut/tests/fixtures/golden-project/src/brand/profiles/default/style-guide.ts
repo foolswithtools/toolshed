@@ -69,6 +69,16 @@ export const durations = {
   transition: 18,
 } as const;
 
+// Theme-tunable motion defaults for animated icons (screencast-cut motion
+// primitives). Theme-level defaults only; a per-use <AnimatedIcon> prop wins.
+// Precedence: config.json "motion" defaults < this block < per-use override.
+export const motion = {
+  defaultRecipe: "drawOn",
+  durationInFrames: 30,
+  easing: "pop",
+  particleIntensity: 1,
+} as const;
+
 export const layout = {
   safePadding: 96,
   cardPadding: 56,

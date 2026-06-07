@@ -15,5 +15,11 @@
   "zoom_ramp_in_ms": 300,
   "zoom_hold_ms": 1500,
   "zoom_ramp_out_ms": 400,
-  "click_merge_window_ms": 1500
+  "click_merge_window_ms": 1500,
+  "motion": {
+    "defaultRecipe": "drawOn",
+    "durationInFrames": 30,
+    "easing": "pop",
+    "particleIntensity": 1.0
+  }
 }

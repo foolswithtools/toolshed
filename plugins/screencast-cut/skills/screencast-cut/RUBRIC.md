@@ -77,6 +77,35 @@ caption word / zoom target). Compare the image to its expectation.
   title, styled in the profile's display face. (If no chapter title was
   extracted, V8 is N/A — do not flag.)
 
+### Animated icons / motion primitives (V9–V12)
+
+Apply these only to cuts that use animated icons (e.g. the `golden-icons`
+showcase). On a cut with no icons, V9–V12 are N/A — do not flag.
+
+- **V9 — Recipe visibly animating.** Look at the recipe icons across the
+  filmstrip (drawOn / popIn / spin / burst / morph). *Fail* if a recipe is
+  frozen in a fully-static end-state on every sampled frame (e.g. a draw-on that
+  is always 100% drawn, a spinner at the same angle), i.e. no motion is evident.
+  *Good:* at least one sampled frame shows each recipe mid-animation — a
+  partially-drawn stroke, an in-between scale, a rotated spinner, particles in
+  flight, or an intermediate morph shape.
+
+- **V10 — Brand recolor applied.** Any icon frame. *Fail* if an icon renders in
+  a default color (black/white) instead of the active profile's accent, or the
+  stroke is the library default rather than the themed color. *Good:* every icon
+  is stroked in the profile palette (accent/glow), matching the rest of the cut.
+
+- **V11 — No clip / no blank icon.** Any icon frame. *Fail* if an icon is cut off
+  by the frame edge, overflows its cell into a neighbour, or an icon cell is
+  blank/black where the registry says an icon exists (a bad path or failed
+  resolve). *Good:* each icon sits fully inside its cell, legible at filmstrip
+  scale.
+
+- **V12 — Ripple centered on its anchor.** Look at `zoom on "ripple-*"` (or any
+  click-ripple) frames. *Fail* if the ripple ring is drawn away from the labeled
+  click point (wrong x/y), or is missing entirely at its anchor sample frame.
+  *Good:* the ring is concentric on the anchor's normalized (x, y) position.
+
 ---
 
 ## Verdict format (subagent → loop)

@@ -1,0 +1,131 @@
+{
+  "alert-triangle": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "arrow-right": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M5 12h14m-7-7l7 7l-7 7"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "bell": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M10.268 21a2 2 0 0 0 3.464 0m-10.47-5.674A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "check": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M20 6L9 17l-5-5"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "chevron-right": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "m9 18l6-6l-6-6"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "copy": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M8.0 8.0h14.0v14.0h-14.0Z",
+      "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "download": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M12 15V3m9 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",
+      "m7 10l5 5l5-5"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "folder": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "loader-circle": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M21 12a9 9 0 1 1-6.219-8.56"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "mouse-pointer-click": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M14 4.1L12 6M5.1 8l-2.9-.8M6 12l-1.9 2M7.2 2.2L8 5.1m1.037 4.59a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "play": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "sparkles": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594zM20 2v4m2-2h-4",
+      "M2.0 20.0a2.0 2.0 0 1 0 4.0 0a2.0 2.0 0 1 0 -4.0 0Z"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "terminal": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M12 19h8M4 17l6-6l-6-6"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  },
+  "x": {
+    "viewBox": "0 0 24 24",
+    "paths": [
+      "M18 6L6 18M6 6l12 12"
+    ],
+    "strokeWidth": 2.0,
+    "set": "lucide",
+    "license": "ISC"
+  }
+}
