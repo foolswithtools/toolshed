@@ -53,7 +53,11 @@ function recolor(animation, rgba, FillCtorNames) {
         } else if (color && color.animated) {
           report.skipped.push({ kind: cn, reason: "animated color" });
         } else if (color) {
-          const next = [rgba[0], rgba[1], rgba[2], rgba[3]];
+          // Preserve the fill's existing alpha (match lottie_ingest.py); a brand
+          // colour shouldn't make a semi-transparent element opaque.
+          const old = Array.isArray(color.value) ? color.value : null;
+          const keepAlpha = old && old.length > 3 ? old[3] : rgba[3];
+          const next = [rgba[0], rgba[1], rgba[2], keepAlpha];
           color.value = next;
           color.values = next;
           report.recolored += 1;

@@ -59,7 +59,15 @@ export const LottieIcon: React.FC<LottieIconProps> = ({
     if (animationData || src == null || handle == null) return;
     const url = /^https?:\/\//.test(src) ? src : staticFile(src);
     fetch(url)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(
+            `LottieIcon: failed to load "${src}" (HTTP ${res.status}). ` +
+              `Check the file was copied into public/ and the path matches.`,
+          );
+        }
+        return res.json();
+      })
       .then((json: LottieAnimationData) => {
         setData(json);
         continueRender(handle);
