@@ -252,7 +252,17 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 - [done] P2-M1 — `@remotion/lottie` wiring + `LottieIcon` scene (frame-deterministic) — added `@remotion/lottie@4.0.473` dep; `scene-templates/LottieIcon.tsx` (+ golden copy) supports `animationData` (in-repo) or `src` (BYO, staticFile→fetch behind `delayRender`/`continueRender`); `<Lottie>` maps useCurrentFrame so expression-free files render bit-identically. `golden-lottie` composition renders the owned-pulse fixture for real — verify_render exits 0, eyeballed: brand-cyan pulsing circle, non-blank. tsc clean.
 - [done] P2-M2 — Expression vetting + best-effort recolor via `@lottiefiles/lottie-js` — `scripts/lottie_ingest.py`: `find_expressions`/`assert_no_expressions` (rejects AE expressions — `x`-string discriminator, eased keyframes not flagged), `recolor_flat_fills` (flat `fl`/`st` → brand color, surfaces gradients/animated/expression colors as un-themable), CLI. `scripts/recolor_lottie.mjs` = the named-lib path (`@lottiefiles/lottie-js`, resolved from project root via createRequire). 14 ingest tests green incl. node-gated parity (lib recolor == python recolor → `[1,0.533,0,1]`).
 - [done] P2-M3 — Licensing guardrail (no bundled third-party JSON; self-authored/CC0 only) + docs — `tests/test_lottie_guardrail.py` scans tracked JSON via `git ls-files`, fails any Lottie-shaped file lacking an OWNED/CC0 `PROVENANCE` note (positive + negative controls green). owned-pulse + test fixtures carry PROVENANCE. USAGE.md "Bring-your-own Lottie" section ("we never ship your Lottie" + expression/recolor rules); SKILL.md Phase-4 Lottie escape-hatch bullet.
-- [ ] P2-M4 — `golden-lottie` composition + e2e + verify + RUBRIC; version + marketplace + USAGE
+- [done] P2-M4 — `golden-lottie` composition + e2e + verify + RUBRIC; version + marketplace + USAGE — `golden-lottie` (owned-pulse via `LottieIcon src=…` staticFile→fetch→delayRender) registered; e2e `test_golden_lottie_renders_and_verifies` (verify exit 0, status pass, all stills render) + determinism/animates assertion (`test_golden_lottie_is_deterministic_and_animates`: frame 7 byte-identical across renders, ≠ frame 22). RUBRIC V13 added. screencast-cut → 0.6.0 (plugin.json + marketplace.json descriptions mention BYO Lottie); TTS reservations renumbered A→0.7.0/B→0.8.0/C→0.9.0 in expansion plan. tsc clean.
+
+### Definition of rock solid (Phase 2) — ALL PASS
+1. pytest green incl. a Lottie path rendering a self-AUTHORED minimal fixture (`owned-pulse.json`, OWNED/CC0) deterministically — ✓ (e2e + determinism test).
+2. `golden-lottie` composition (self-authored, expression-free) renders for real; verify_render exits 0 — ✓.
+3. Expression-determinism guard rejects expression-driven Lottie with a clear message — ✓ (`assert_no_expressions`, tested on `has-expressions.json`).
+4. Licensing guardrail: tracked Lottie-shaped JSON must carry OWNED/CC0 provenance — ✓ (`test_lottie_guardrail.py`, positive+negative controls).
+5. Best-effort recolor via `@lottiefiles/lottie-js` for flat fills, gradients/animated surfaced as un-themable — ✓ (`recolor_lottie.mjs` + python parity test).
+6. Pre-push clean (guardrail, JSON, tsc, pytest); USAGE documents BYO flow + "we never ship your Lottie" — ✓ (run below).
+
+**Phase 1.1 + Phase 2 COMPLETE. Stopped before Phase 3/4 (each needs explicit human go-ahead).**
 
 <!-- Phases 3 and 4 are DEFERRED: do not add their PROGRESS sections or execute them until explicitly activated. This round stops at the Phase 2 gate. -->
 

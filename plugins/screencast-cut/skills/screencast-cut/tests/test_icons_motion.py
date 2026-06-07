@@ -79,6 +79,33 @@ def _render_probe(project, comp_id, out_dir):
     return out
 
 
+def test_golden_lottie_is_deterministic_and_animates(golden_installed, tmp_path):
+    """The bring-your-own Lottie path renders DETERMINISTICALLY (same frame →
+    identical bytes across two renders — the property an expression-driven file
+    would violate) AND actually animates (two different frames differ). This is
+    the Phase-2 "renders a minimal Lottie fixture deterministically" guarantee."""
+    project = golden_installed
+
+    # Render frame 7 twice and frame 22 once.
+    r1, _, e1 = vr._run_helper(project, "golden-lottie", 0.5, [7], tmp_path / "run1")
+    r2, _, e2 = vr._run_helper(project, "golden-lottie", 0.5, [7, 22], tmp_path / "run2")
+    assert r1 and r1.get("ok"), f"render 1 failed: {e1}"
+    assert r2 and r2.get("ok"), f"render 2 failed: {e2}"
+
+    f7a = _hash(_still(r1, 7))
+    f7b = _hash(_still(r2, 7))
+    f22 = _hash(_still(r2, 22))
+
+    assert f7a == f7b, "golden-lottie frame 7 differs between renders — NOT deterministic"
+    assert f7a != f22, "golden-lottie frame 7 == frame 22 — the Lottie is not animating"
+
+
+def _still(result, frame):
+    s = next(s for s in result["stills"] if s["frame"] == frame)
+    assert s["ok"], f"frame {frame} failed: {s.get('error')}"
+    return s["path"]
+
+
 @pytest.mark.parametrize("comp_id", PROBE_IDS)
 def test_recipe_actually_animates(golden_installed, comp_id, tmp_path):
     """start/mid/end stills are not all identical, and mid != start — the recipe

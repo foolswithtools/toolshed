@@ -113,6 +113,22 @@ showcase). On a cut with no icons, V9–V12 are N/A — do not flag.
   click point (wrong x/y), or is missing entirely at its anchor sample frame.
   *Good:* the ring is concentric on the anchor's normalized (x, y) position.
 
+### Bring-your-own Lottie (V13)
+
+Apply only to cuts that render a Lottie animation (e.g. the `golden-lottie`
+showcase). On a cut with no Lottie, V13 is N/A — do not flag.
+
+- **V13 — Lottie renders and is on-brand.** Look at the Lottie frames. *Fail* if
+  the Lottie cell is blank/black (failed to load — a bad `src`/`delayRender`
+  that never resolved), or renders in a colour clearly off the active palette
+  when the file was meant to be recolored. *Good:* the Lottie shape is visible,
+  recoloured toward the brand accent for flat-fill files (gradients excepted —
+  those are documented as not themeable), and looks consistent frame-to-frame
+  (no flicker — an expression-driven file that slipped the ingest guard would
+  jitter between renders; the deterministic check `test_icons_motion.py ::
+  test_golden_lottie_is_deterministic_and_animates` is the machine backstop for
+  that).
+
 ---
 
 ## Verdict format (subagent → loop)
