@@ -69,6 +69,25 @@ def test_rect_converted_to_path():
     assert out["paths"] == ["M3.0 4.0h18.0v16.0h-18.0Z"]
 
 
+def test_rect_rounded_corners_preserved():
+    # A <rect> with rx must keep its rounded corners (arc commands), not flatten
+    # to a sharp box — otherwise pulled icons (Tabler/Heroicons) render wrong.
+    svg = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>'
+    out = icon_svg.parse_svg(svg)
+    d = out["paths"][0]
+    assert "a4" in d.replace(" ", "")  # arc segments present (rx mirrored to ry)
+    assert d.count("a") == 4 and d.endswith("Z")
+
+
+def test_rect_rx_mirrors_ry_and_clamps():
+    # ry defaults to rx; both clamp to half the side so they never overshoot.
+    svg = '<svg viewBox="0 0 10 10"><rect x="0" y="0" width="10" height="10" rx="99"/></svg>'
+    out = icon_svg.parse_svg(svg)
+    # rx clamps to w/2 = 5 -> a "circle-ish" superellipse, still valid + closed
+    assert out["paths"][0].startswith("M5.0 0")
+    assert out["paths"][0].endswith("Z")
+
+
 def test_mixed_primitives_preserve_order():
     svg = (
         '<svg viewBox="0 0 24 24">'

@@ -155,3 +155,152 @@ export function zoomFocalPoint(
 export function captionWordToFrame(wordStartS: number, fps: number): number {
   return Math.round(wordStartS * fps);
 }
+
+// --- Motion-primitive math (animated icons) ---------------------------------
+//
+// The pure geometry/timing the icon recipes need. `spring()`, `evolvePath()`,
+// `interpolatePath()` are Remotion built-ins used directly in the recipes and
+// are NOT reimplemented here — these are only the bits *we* own and must keep
+// identical to `timing_math.py`.
+
+function clamp01(x: number): number {
+  if (x < 0) return 0;
+  if (x > 1) return 1;
+  return x;
+}
+
+/**
+ * Clamped 0..1 progress of an animation that runs over a frame window.
+ *
+ * Returns 0 before `startFrame`, 1 at/after `startFrame + durationFrames`, and
+ * the linear fraction in between. A non-positive `durationFrames` means an
+ * instantaneous animation: 0 before the start frame, 1 at/after it.
+ */
+export function animationPhase(
+  frame: number,
+  startFrame: number,
+  durationFrames: number,
+): number {
+  if (durationFrames <= 0) return frame < startFrame ? 0 : 1;
+  const p = (frame - startFrame) / durationFrames;
+  if (p < 0) return 0;
+  if (p > 1) return 1;
+  return p;
+}
+
+/**
+ * Per-element progress for a multi-element draw-on stagger.
+ *
+ * Spreads a global `progress` (0..1) across `count` elements so element `index`
+ * animates within its own sub-window, then clamps to 0..1. `overlap` in [0,1]
+ * controls how much consecutive windows overlap:
+ *   - overlap = 1 → every window is the whole timeline (all animate together),
+ *   - overlap = 0 → windows are sequential and non-overlapping (1/count each).
+ * With `count <= 1` the element just tracks `progress`.
+ */
+export function staggeredProgress(
+  progress: number,
+  index: number,
+  count: number,
+  overlap: number,
+): number {
+  if (count <= 1) return clamp01(progress);
+  const o = overlap < 0 ? 0 : overlap > 1 ? 1 : overlap;
+  const lastStart = ((count - 1) / count) * (1 - o);
+  const width = 1 - lastStart;
+  const startI = (index / count) * (1 - o);
+  return clamp01((progress - startI) / width);
+}
+
+export interface BurstParticle {
+  x: number;
+  y: number;
+  scale: number;
+  opacity: number;
+}
+
+/**
+ * Deterministic radial burst: `count` particles flung from the origin.
+ *
+ * Particle `i` sits at angle `i / count * 2π` (evenly spaced, no randomness), at
+ * radius `progress * maxRadius`. It shrinks and fades as it travels. Returns
+ * `{x, y, scale, opacity}` offsets relative to the origin; the component adds
+ * the anchor position.
+ */
+export function burstParticles(
+  count: number,
+  progress: number,
+  maxRadius: number,
+): BurstParticle[] {
+  const n = Math.trunc(count);
+  if (n <= 0) return [];
+  const p = clamp01(progress);
+  const radius = p * maxRadius;
+  const fade = 1 - p;
+  const out: BurstParticle[] = [];
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * 2 * Math.PI;
+    out.push({
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
+      scale: fade,
+      opacity: fade,
+    });
+  }
+  return out;
+}
+
+/**
+ * Expanding ring for a click-ripple: `radius` grows (`progress * maxRadius`,
+ * monotonically increasing) and `opacity` fades (`1 - progress`, monotonically
+ * decreasing) so the ring expands outward and dissolves.
+ */
+export function rippleGeometry(
+  progress: number,
+  maxRadius: number,
+): { radius: number; opacity: number } {
+  const p = clamp01(progress);
+  return { radius: p * maxRadius, opacity: 1 - p };
+}
+
+// --- Theme-tunable motion defaults ------------------------------------------
+//
+// The lowest-precedence motion defaults. Mirrors the `"motion"` block in
+// `config.json` and `DEFAULT_MOTION` in `timing_math.py` VERBATIM — the global
+// floor a profile only deviates from. `defaultRecipe` is typed as `string` here
+// (not `RecipeName`) so this twin stays free of any Remotion/recipe import.
+export interface MotionSettings {
+  defaultRecipe: string;
+  durationInFrames: number;
+  easing: string;
+  particleIntensity: number;
+}
+
+export const DEFAULT_MOTION: MotionSettings = {
+  defaultRecipe: "drawOn",
+  durationInFrames: 30,
+  easing: "pop",
+  particleIntensity: 1,
+};
+
+/**
+ * Merge motion settings with precedence config < profile < per-use.
+ *
+ * Later layers override earlier ones key-by-key; an `undefined`/`null` value is
+ * treated as "not set" and falls through, so a per-use override only names the
+ * keys it changes. Returns a new merged object.
+ */
+export function resolveMotion(
+  configDefaults?: Partial<MotionSettings> | null,
+  profileMotion?: Partial<MotionSettings> | null,
+  perUse?: Partial<MotionSettings> | null,
+): MotionSettings {
+  const out: Record<string, unknown> = {};
+  for (const layer of [configDefaults, profileMotion, perUse]) {
+    if (!layer) continue;
+    for (const [k, v] of Object.entries(layer)) {
+      if (v !== undefined && v !== null) out[k] = v;
+    }
+  }
+  return out as unknown as MotionSettings;
+}

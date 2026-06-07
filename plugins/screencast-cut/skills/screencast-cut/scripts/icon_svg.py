@@ -65,8 +65,29 @@ def _ellipse_to_path(cx, cy, rx, ry):
     )
 
 
-def _rect_to_path(x, y, w, h):
-    return f"M{x} {y}h{w}v{h}h{-w}Z"
+def _rect_to_path(x, y, w, h, rx=0.0, ry=0.0):
+    # Sharp corners: the simple 4-segment box.
+    if rx <= 0 and ry <= 0:
+        return f"M{x} {y}h{w}v{h}h{-w}Z"
+    # SVG rule: a missing rx/ry mirrors the other; both clamp to half the side.
+    if rx <= 0:
+        rx = ry
+    if ry <= 0:
+        ry = rx
+    rx = min(rx, w / 2)
+    ry = min(ry, h / 2)
+    return (
+        f"M{x + rx} {y}"
+        f"h{w - 2 * rx}"
+        f"a{rx} {ry} 0 0 1 {rx} {ry}"
+        f"v{h - 2 * ry}"
+        f"a{rx} {ry} 0 0 1 {-rx} {ry}"
+        f"h{-(w - 2 * rx)}"
+        f"a{rx} {ry} 0 0 1 {-rx} {-ry}"
+        f"v{-(h - 2 * ry)}"
+        f"a{rx} {ry} 0 0 1 {rx} {-ry}"
+        "Z"
+    )
 
 
 def _element_to_path(tag, attrs):
@@ -100,6 +121,8 @@ def _element_to_path(tag, attrs):
             _num(_attr(attrs, "y")),
             _num(_attr(attrs, "width")),
             _num(_attr(attrs, "height")),
+            _num(_attr(attrs, "rx")),
+            _num(_attr(attrs, "ry")),
         )
     return None
 

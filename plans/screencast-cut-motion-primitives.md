@@ -18,7 +18,7 @@
 - **Recipes (~5):** `drawOn` (stroke reveal via `evolvePath`), `popIn` (spring scale), `spin` (rotate, for loaders), `burst`/`ripple` (particles via our own pure geometry + `@remotion/shapes`), `morph` (`interpolatePath` between two compatible icon paths).
 - **Beachhead:** an animated **click-ripple on the MP4 zoom path**, driven by the `zoom_anchors.json` we already compute (`t_s`, `x`, `y`). It needs no icon set (just `@remotion/shapes` `Circle`), so it's the cheapest primitive that proves the whole pattern end-to-end.
 - **Curated source:** prefer **Lucide (ISC)** as the primary (stroke-based, matches the brand aesthetic), **Tabler (MIT)** as secondary. Bundle a `THIRD-PARTY-NOTICES` file listing each set, license, and source URL.
-- **Brand-claim guardrail (`CLAUDE.md`) still applies** — never place the words "anthropic" and "remotion" within ~3 lines in any committed file. Run `bash scripts/check-no-anthropic-remotion-claim.sh` before every push.
+- **Brand-claim guardrail (`CLAUDE.md`) still applies** — keep the two forbidden brand words far apart in any committed file; `CLAUDE.md` spells out the exact rule and the safe-token allowlist. Run `bash scripts/check-no-anthropic-remotion-claim.sh` before every push.
 
 ---
 
