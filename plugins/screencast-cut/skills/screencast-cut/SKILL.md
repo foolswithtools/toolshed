@@ -294,6 +294,21 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
        - `IdleCutCard.tsx` — the "…" placeholder for cut gaps.
        - `OutroCard.tsx` — shaped by the **resolved `cta_shape`**: `next-steps` → one concrete next-action line; `question` → on-screen question; `logo-card` → wordmark-only (used by `chapter_position = last` and middle-chapter transitional outros).
 
+   **(c) Add animated icons / motion primitives** when a beat wants a flourish — a ✓ when a command succeeds, an arrow at terminal output, sparkles on a card, a spinning loader, or a ripple on a click. Animation here is **code, not data**: permissive static SVGs animated with Remotion's frame-deterministic primitives (no Lottie in Phase 1). Copy the engine in alongside the reference scenes:
+       ```bash
+       cp -r "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scene-templates/"{recipes.ts,AnimatedIcon.tsx,ClickRipple.tsx,icons} \
+          "<project>/videos/<slug>/scenes/"
+       ```
+       - **Recipes (5):** `drawOn` (stroke reveal via `evolvePath`, staggered + eased), `popIn` (spring scale), `spin` (rotate, for loaders), `burst` (particles via our pure geometry + `@remotion/shapes`), `morph` (`interpolatePath` between two structurally-compatible single-path icons). `popIn`/`spin`/`burst` work on ANY icon; `drawOn` needs path data (it falls back to `popIn` for a pathless icon); `morph` needs a compatible `morphTo`.
+       - **Icons:** `<AnimatedIcon icon={icons["check"]} recipe="popIn" color={palette.accent} />`. The curated floor (`scenes/icons/index.ts`, Lucide ISC, ~14 icons) is the **offline baseline**. Need one that isn't there? Pull it once into the project, then it's local forever:
+         ```bash
+         python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/fetch_icon.py" \
+             lucide:rocket --icons-dir "<project>/videos/<slug>/scenes/icons"
+         ```
+         The puller only accepts permissively-licensed sets (ISC/MIT/Apache: lucide, tabler, ph, heroicons, mdi, …) and records each in `THIRD-PARTY-NOTICES`; it refuses anything else.
+       - **Click ripple (beachhead):** on the MP4 zoom path, mount `<ClickRipple x={anchor.x} y={anchor.y} color={palette.accentGlow} />` from the same `zoom_anchors.json` anchor the zoom uses — no icon needed.
+       - **Theme-tunable motion, precedence `config < profile < per-use`.** Defaults come from the active profile's `motion` block in `style-guide.ts` (`defaultRecipe`, `durationInFrames`, `easing` — a key of the profile `easings` — and `particleIntensity`), which itself falls back to the global `config.json` `"motion"` defaults; any per-use prop on `<AnimatedIcon>` wins. Swapping the active profile changes icon motion without touching a scene. Keep it theme-level — do **not** build a per-icon-per-theme matrix.
+
    **cancelRender convention (load-bearing — do not skip).** Every visual asset (PNG frame, MP4) must be rendered through the `SafeImg` / `SafeVideo` wrappers you copied in (a), which call `cancelRender()` from `remotion` in `onError`. This converts "missing asset → silent black frame" (which a vision check might wave through) into a **deterministic `renderStill` failure** the Phase-4 verify loop catches every time. Audio is the one exception: use `SafeAudio` (in `SafeVideo.tsx`), which **warns only** — a missing voiceover should still ship a render. The card scenes you author freehand must use these wrappers too for any image/video they pull in. This requirement is mirrored in the `remotion-video` SKILL.md Phase 4 (the scene-authoring authority).
 
 4. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` with `computeMasterDuration(beatDurations, transitionFrames)` from `./timing` — do not hand-add the overlaps (that arithmetic is the tested helper's job). For speed-ramped beats, the beat's output length is `speedrampOutputFrames(startIdx, endIdx, factor)`, also from `./timing`.

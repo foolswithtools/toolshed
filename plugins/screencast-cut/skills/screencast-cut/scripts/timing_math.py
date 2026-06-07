@@ -152,3 +152,132 @@ def zoom_focal_point(scale, cx, cy, zoom_factor):
 def caption_word_to_frame(word_start_s, fps):
     """Map a caption word's start time (seconds) to an output frame index."""
     return _round_half_up(word_start_s * fps)
+
+
+# --- Motion-primitive math (animated icons) -----------------------------------
+#
+# The pure geometry/timing the icon recipes need. `spring()`, `evolvePath()`,
+# `interpolatePath()` are Remotion built-ins used directly in TS and are NOT
+# reimplemented here — these are only the bits *we* own and must keep identical
+# across the Python (manifest/sampling) and TypeScript (Remotion) sides.
+
+
+def animation_phase(frame, start_frame, duration_frames):
+    """Clamped 0..1 progress of an animation that runs over a frame window.
+
+    Returns 0 before `start_frame`, 1 at/after `start_frame + duration_frames`,
+    and the linear fraction in between. A non-positive `duration_frames` means an
+    instantaneous animation: 0 before the start frame, 1 at/after it.
+    """
+    if duration_frames <= 0:
+        return 0.0 if frame < start_frame else 1.0
+    p = (frame - start_frame) / duration_frames
+    if p < 0.0:
+        return 0.0
+    if p > 1.0:
+        return 1.0
+    return p
+
+
+def staggered_progress(progress, index, count, overlap):
+    """Per-element progress for a multi-element draw-on stagger.
+
+    Spreads a global `progress` (0..1) across `count` elements so element `index`
+    animates within its own sub-window, then clamps to 0..1. `overlap` in [0,1]
+    controls how much consecutive windows overlap:
+
+      - overlap = 1  → every window is the whole timeline (all animate together),
+      - overlap = 0  → windows are sequential and non-overlapping (1/count each).
+
+    With `count <= 1` (or a single element) the element just tracks `progress`.
+    Pure function of `progress`, so two renders of the same frame agree.
+    """
+    if count <= 1:
+        return _clamp01(progress)
+    o = 0.0 if overlap < 0.0 else (1.0 if overlap > 1.0 else overlap)
+    # Start of the LAST element's window; window width fills the remainder so the
+    # last element finishes exactly at progress 1.
+    last_start = ((count - 1) / count) * (1.0 - o)
+    width = 1.0 - last_start
+    start_i = (index / count) * (1.0 - o)
+    return _clamp01((progress - start_i) / width)
+
+
+def burst_particles(count, progress, max_radius):
+    """Deterministic radial burst: `count` particles flung from the origin.
+
+    Particle `i` sits at angle `i / count * 2π` (evenly spaced, no randomness),
+    at radius `progress * max_radius`. It shrinks and fades as it travels, so the
+    burst reads as an outward spark. Returns a list of
+    `{x, y, scale, opacity}` offsets relative to the origin; the component adds
+    the anchor position. Pure function of `progress`.
+    """
+    n = int(count)
+    if n <= 0:
+        return []
+    p = _clamp01(progress)
+    radius = p * max_radius
+    fade = 1.0 - p
+    out = []
+    for i in range(n):
+        angle = (i / n) * 2.0 * math.pi
+        out.append({
+            "x": math.cos(angle) * radius,
+            "y": math.sin(angle) * radius,
+            "scale": fade,
+            "opacity": fade,
+        })
+    return out
+
+
+def ripple_geometry(progress, max_radius):
+    """Expanding ring for a click-ripple: radius grows, opacity fades.
+
+    `radius` is `progress * max_radius` (monotonically increasing) and `opacity`
+    is `1 - progress` (monotonically decreasing) so the ring expands outward and
+    dissolves. Pure function of `progress`.
+    """
+    p = _clamp01(progress)
+    return {"radius": p * max_radius, "opacity": 1.0 - p}
+
+
+def _clamp01(x):
+    """Clamp to [0, 1]."""
+    if x < 0.0:
+        return 0.0
+    if x > 1.0:
+        return 1.0
+    return x
+
+
+# --- Theme-tunable motion defaults --------------------------------------------
+#
+# The lowest-precedence motion defaults. This dict mirrors the `"motion"` block
+# in `config.json` and the `DEFAULT_MOTION` constant in `timing.ts` VERBATIM —
+# they are the global floor a profile only deviates from. Precedence is
+# resolved by `resolve_motion`: config default < profile motion < per-use.
+
+DEFAULT_MOTION = {
+    "defaultRecipe": "drawOn",
+    "durationInFrames": 30,
+    "easing": "pop",
+    "particleIntensity": 1.0,
+}
+
+
+def resolve_motion(config_defaults, profile_motion, per_use):
+    """Merge motion settings with precedence config < profile < per-use.
+
+    Each argument is a dict (or None/empty). Later layers override earlier ones
+    key-by-key; a key whose value is None is treated as "not set" and falls
+    through to the layer below, so a per-use override only needs to name the keys
+    it actually changes. Returns a new merged dict.
+    """
+    result = {}
+    for layer in (config_defaults, profile_motion, per_use):
+        if not layer:
+            continue
+        for k, v in layer.items():
+            if v is not None:
+                result[k] = v
+    return result

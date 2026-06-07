@@ -144,6 +144,46 @@ Open Claude Code in your Remotion project directory and paste a prompt like one 
 
 ---
 
+## Animated icons (optional flourishes)
+
+From 0.5.0, cuts can carry small **animated icons** — a ✓ when a command
+succeeds, an arrow pointing at terminal output, sparkles on a card, a spinning
+loader, or a ripple on a click. They're on-brand by default (recolored to your
+active profile's accent) and rendered deterministically, so they look identical
+every render. You don't configure anything — just ask:
+
+> "Add a green check that draws on when the install finishes."
+
+> "Put a click ripple on the button when the cursor lands there."
+
+> "Spin a loader while the build runs, then pop in a ✓."
+
+**What's available:**
+
+- **Five motion styles** (recipes): `drawOn` (a stroke draws itself on), `popIn`
+  (springs in), `spin` (rotates, for loaders), `burst` (sparkle particles), and
+  `morph` (one shape becomes another).
+- **A built-in icon set** (~14 common ones: check, x, arrow, terminal, bell,
+  sparkles, download, folder, play, loader, …) that works offline.
+- **Any other icon, pulled on demand.** Need one that isn't built in? Claude
+  fetches it once from a permissively-licensed set (Lucide, Tabler, Phosphor,
+  Heroicons, Material, …) into your project, after which it's local forever — no
+  network on later renders. Just name it: *"use a rocket icon"*.
+
+**Tuning the feel per brand.** Each brand profile has a small `motion` block in
+its `style-guide.ts` (default recipe, duration, easing, particle intensity). Set
+it once and every icon in that profile follows suit; a per-use request still
+overrides it. The punk `foolswithtools-brand` profile, for instance, pops icons
+in with a hand-drawn easing by default, while `default` draws them on. You
+rarely need to touch this — it's there so icons match the rest of your videos.
+
+> Licensing note: only permissively-licensed icon sets are ever bundled or
+> pulled, and each is attributed in a `THIRD-PARTY-NOTICES` file next to the
+> icons. Lottie animations are **not** used (a later opt-in may add a
+> bring-your-own path for files you have the rights to).
+
+---
+
 ## What you'll see, in order
 
 The skill runs in seven phases. You don't drive them — Claude does — but knowing what's normal helps you tell *signal* from *something's wrong*.

@@ -1,0 +1,25 @@
+{
+  "source": "manual",
+  "duration_s": 4.0,
+  "display": {
+    "width_px": 1920,
+    "height_px": 1080,
+    "scale": 1.0
+  },
+  "anchors": [
+    {
+      "t_s": 1.0,
+      "x": 0.25,
+      "y": 0.7,
+      "button": "left",
+      "label": "ripple-left"
+    },
+    {
+      "t_s": 2.5,
+      "x": 0.75,
+      "y": 0.7,
+      "button": "left",
+      "label": "ripple-right"
+    }
+  ]
+}

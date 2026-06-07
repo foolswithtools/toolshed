@@ -89,3 +89,55 @@ def test_golden_cut_mp4_zoomed_section_renders(golden_installed):
     summary = _load(project / "videos" / "golden-cut-mp4" / ".checks" / "verify-summary.json")
     assert summary["status"] == "pass"
     assert all(s["rendered"] for s in summary["filmstrip"])
+
+
+# golden-icons: the animated-icon showcase. Curated local icons only (no
+# network), every recipe + the ClickRipple, recolored to the brand accent.
+GOLDEN_ICONS_DURATION = 120
+GOLDEN_ICONS_MAX_STILLS = 8
+
+
+def test_golden_icons_renders_and_verifies(golden_installed):
+    """Every motion recipe + the ClickRipple bundle and render for real, and the
+    filmstrip frame set is reproducible from the committed zoom_anchors.json."""
+    project = golden_installed
+    rc = vr.main([
+        str(project), "golden-icons",
+        "--expect-duration-frames", str(GOLDEN_ICONS_DURATION),
+        "--expect-width", str(WIDTH),
+        "--expect-height", str(HEIGHT),
+        "--scale", "0.5",
+        "--max-stills", str(GOLDEN_ICONS_MAX_STILLS),
+        "--video-start-frame", "0",
+    ])
+    assert rc == 0, "verify_render did not exit 0 on golden-icons"
+
+    summary = _load(project / "videos" / "golden-icons" / ".checks" / "verify-summary.json")
+    assert summary["status"] == "pass"
+    assert summary["gates"]["bundle"]["pass"]
+    assert summary["gates"]["composition_exists"]["pass"]
+    assert summary["gates"]["dimensions"]["pass"]
+    assert summary["gates"]["duration"]["pass"]
+    assert summary["gates"]["duration"]["actual"] == GOLDEN_ICONS_DURATION
+    assert summary["gates"]["stills_render"]["pass"]
+    assert summary["gates"]["stills_render"]["count"] > 0
+    assert all(s["rendered"] for s in summary["filmstrip"]), \
+        "a golden-icons filmstrip still failed to render"
+
+    # The ripple anchors must drive the filmstrip set deterministically.
+    zoom = _load(project / "videos" / "golden-icons" / "source" / "zoom_anchors.json")
+    expected = vr.compute_filmstrip_frames(
+        GOLDEN_ICONS_DURATION,
+        FPS,
+        timing=None,
+        transcript=None,
+        zoom=zoom,
+        video_start_frame=0,
+        max_stills=GOLDEN_ICONS_MAX_STILLS,
+    )
+    expected_frames = sorted(e["frame"] for e in expected)
+    actual_frames = sorted(s["frame"] for s in summary["filmstrip"])
+    assert actual_frames == expected_frames
+    # Both committed anchors appear as zoom-labelled sample frames.
+    zoom_labels = {e.get("zoom") for e in expected}
+    assert {"ripple-left", "ripple-right"} <= zoom_labels

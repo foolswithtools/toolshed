@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { GoldenCut } from "../videos/golden-cut/Root";
 import { GoldenCutMp4 } from "../videos/golden-cut-mp4/Root";
+import { GoldenIcons, GOLDEN_ICONS_DURATION } from "../videos/golden-icons/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -33,6 +34,14 @@ export const RemotionRoot: React.FC = () => {
         id="golden-cut-mp4"
         component={GoldenCutMp4}
         durationInFrames={GOLDEN_CUT_MP4_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      <Composition
+        id="golden-icons"
+        component={GoldenIcons}
+        durationInFrames={GOLDEN_ICONS_DURATION}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
