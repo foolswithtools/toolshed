@@ -6,6 +6,8 @@
   "default_outro_frames": 60,
   "caption_style": "auto",
   "fps": 30,
+  "screenshot_scale": 0.25,
+  "verify_scale": 0.5,
   "agg_theme": "monokai",
   "agg_font_size": 14,
   "whisper_model": "base.en",

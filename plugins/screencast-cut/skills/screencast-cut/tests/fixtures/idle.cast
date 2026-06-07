@@ -1,0 +1,4 @@
+{"version": 2, "width": 80, "height": 24, "timestamp": 1700000000}
+[0.5, "o", "start\r\n"]
+[3.0, "o", "after short idle\r\n"]
+[12.0, "o", "after long idle\r\n"]

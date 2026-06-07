@@ -1,7 +1,7 @@
 ---
 name: screencast-cut
 description: Use this skill when the user wants to "edit a screen recording", "turn a terminal cast into a video", "cut a tutorial from this .cast file", "make a video from this MP4", "auto-zoom on clicks in a screen capture", or pastes a path to a `.cast` / `.mp4` (often alongside an audio file or click-event log) and asks for a polished video. Speed-ramps idle gaps in terminal recordings, plans auto-zoom on click anchors for screen captures, transcribes audio with Whisper for word-level captions, and emits a Remotion project ready for the `remotion-video` plugin to preview and render. Reuses the active brand profile from the Remotion project (including its genre playbook for tutorial vs. shortform editing decisions) so output style matches the rest of the user's videos.
-version: 0.5.0
+version: 0.4.0
 ---
 
 # Screencast Cut
@@ -54,6 +54,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/config.json`. Defaults:
 | `default_outro_frames` | `60` | Outro card (2s @ 30fps). |
 | `caption_style` | `"auto"` | `karaoke` (per-word reveal, shortform) / `band` (clean caption bar, tutorial) / `auto` picks by aspect ratio. |
 | `fps` | `30` | Frames per second for the rendered project. |
+| `screenshot_scale` | `0.25` | `--scale` for quick per-scene `npx remotion still` checks. |
+| `verify_scale` | `0.5` | `--scale` for the Phase 4 `verify_render.py` filmstrip (0.25 is too small to read captions). |
 | `agg_theme` | `"monokai"` | Pass-through to `agg --theme`. |
 | `agg_font_size` | `14` | Pass-through to `agg --font-size`. |
 | `whisper_model` | `"base.en"` | ggml model name. `small.en` is more accurate, slower. |
@@ -86,7 +88,7 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
 
 1. List profiles: `ls <project>/src/brand/profiles/`.
 2. Read `<project>/src/brand/active.ts` to learn which profile is active. If the user said "use the X profile" in this prompt, follow the same switch logic the `remotion-video` skill uses (copy the template if missing, rewrite `active.ts` to re-export from it). Tell the user you switched.
-3. Read the active profile's `BRAND.md` so you know the typography, palette, motion vocabulary, and any promoted components.
+3. Read the active profile's `BRAND.md` so you know the typography, palette, and easing/spring presets (`easings`, `springs`). Note which components the profile actually ships under `components/` — the `default` profile ships none; `foolswithtools-brand` ships `WordmarkHero`, `TerminalChip`, etc. Reuse a profile component only when its file exists.
 4. **Classify the input** by extension:
    - `.cast` → asciinema path (Phase 3a).
    - `.mp4` / `.mov` → screen-capture path (Phase 3b).
@@ -115,7 +117,7 @@ This skill's output is a *new video subdirectory* inside an existing Remotion pr
 9. **Resolve the playbook.** Look for `PLAYBOOK-<genre>.md` in this order, take the first that exists:
    1. `<project>/src/brand/profiles/<active>/PLAYBOOK-<genre>.md` — profile has its own playbook.
    2. `<project>/src/brand/profiles/default/PLAYBOOK-<genre>.md` — default profile's playbook (scaffolded by `remotion-video`).
-   3. `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}/skills/remotion-video/templates/default/PLAYBOOK-<genre>.md` — plugin-shipped template (last resort; surface a note that the user should run the `remotion-video` skill once to scaffold the playbook into their project).
+   3. The `remotion-video` plugin's shipped template — resolve it by walking up from this SKILL.md's directory to the `plugins/` root, then `remotion-video/skills/remotion-video/templates/default/PLAYBOOK-<genre>.md`. (If `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}` is set, prefer it, but do not depend on it being defined.) Last resort; surface a note that the user should run the `remotion-video` skill once to scaffold the playbook into their project.
 
    If no playbook is found anywhere (only possible if the plugin install is broken), proceed with config defaults only and tell the user the playbook layer is unavailable.
 10. **Parse the playbook's `## Decision overrides` block.** Read the file and extract every `- key: value # justification` line under that heading. Recognized keys (anything else is ignored with a one-line warning, since unknown keys mean a stale schema):
@@ -210,12 +212,12 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scripts/parse_events.py" \
 ```
 
 `<events-input>` is one of:
-- A `.screenize/` package directory from Screenize (polyrecorder-v2).
-- A flat manual `events.json` the user wrote (schema below).
+- A `.screenize/` package directory from Screenize (polyrecorder-v2). **⚠ The polyrecorder-v2 field names are UNVERIFIED** — they haven't been checked against a real Screenize export. The parser validates defensively and marks output `"source": "polyrecorder-v2"`, but sanity-check the resulting anchors. The manual path is the verified one.
+- A flat manual `events.json` the user wrote.
 
-The parser writes `<project>/videos/<slug>/source/zoom_anchors.json` with normalized 0..1 coordinates.
+The parser writes `<project>/videos/<slug>/source/zoom_anchors.json` (validated against `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/schemas/zoom_anchors.schema.json`) with normalized 0..1 coordinates.
 
-**Manual `events.json` schema** — when the user has a CleanShot or QuickTime MP4 and wants auto-zoom, walk them through authoring this file (or generate it via AskUserQuestion if you have a frame-by-frame inspection of the video):
+**Manual `events.json` schema** — the single source of truth is `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/schemas/events.input.schema.json`. Read it rather than relying on this prose; `parse_events.py` validates the user's file against it on read and surfaces a precise location on any error. When the user has a CleanShot or QuickTime MP4 and wants auto-zoom, walk them through authoring a file shaped like:
 
 ```json
 {
@@ -228,7 +230,7 @@ The parser writes `<project>/videos/<slug>/source/zoom_anchors.json` with normal
 }
 ```
 
-`x`/`y` here are normalized 0..1 (top-left origin). For users who only know pixel coordinates, give them the formula: `x = px / display.width_px`. The `label` is optional but good for chapter cards.
+`x`/`y` are normalized 0..1 (top-left origin); only `t_s` is required per click. For users who only know pixel coordinates, give them the formula: `x = px / display.width_px`. The `label` is optional but good for chapter cards. (The authoritative field list, types, and which fields are required live in the schema file above — don't let this example drift from it.)
 
 **No click data at all?** Skip the auto-zoom layer entirely — the MP4 plays full-frame with captions over it. Tell the user that's what they're getting and offer the manual-anchor escape hatch.
 
@@ -241,7 +243,7 @@ Use the **final decisions resolved in Phase 2** for intro/outro/captions/cta_sha
 - **Recap-and-continue beat** (only if `chapter_position = middle`) — 7s, replaces the cold-open hook for chapters in the middle of a series.
 - **Content beats** built from the MP4 plus zoom anchors:
   - Default: the MP4 plays at 1× behind the active profile's caption layer.
-  - For each click anchor, plan a *zoom segment*: zoom-in starting **300ms before** the click, hold at the active zoom for **1.5s**, zoom-out **400ms** after. Use the active profile's easing presets (e.g. `easings.zoomIn`, `easings.zoomOut` if defined; else `Easing.bezier(0.4, 0, 0.2, 1)`).
+  - For each click anchor, plan a *zoom segment*: zoom-in starting **300ms before** the click, hold at the active zoom for **1.5s**, zoom-out **400ms** after. Use a profile easing for the camera move — `easings.camera` (present in every profile) is ideal; `easings.apple` if the profile defines it; else `easings.softInOut`, falling back to `Easing.bezier(0.4, 0, 0.2, 1)`.
   - Zoom level: 1.6× by default (configurable via `zoom_factor` in config). Center the zoom on the click coordinate, clamping the visible window so it doesn't drift outside the source frame.
   - Adjacent click anchors within 1.5s of each other → merge into one zoom segment that pans between the two anchor points.
 - **Outro beat** (`outro_frames` from resolved decisions, shaped by `cta_shape`) — call-to-action card from the active profile.
@@ -270,30 +272,51 @@ Write the plan first to `<project>/videos/<slug>/PLAN.md`, then build:
    cp <project>/videos/<slug>/source/frames/*.png <project>/public/<slug>/frames/
    ```
 
-3. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode. Reuse promoted components from `<project>/src/brand/profiles/<active>/components/` when applicable.
+3. **Build scene components** under `<project>/videos/<slug>/scenes/`. Drive everything from `useCurrentFrame()` and `useVideoConfig()`. Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode.
 
-   The scene shapes you'll typically need (asciinema path):
-   - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener. Omit if `intro_frames = 0`.
-   - `ChapterCard.tsx` — only when a chapter title was extracted in Phase 2. Reuse the active profile's title-card component if one exists at `<project>/src/brand/profiles/<active>/components/ChapterCard.tsx` or `TitleCard.tsx`; otherwise scaffold a minimal local version that types out the chapter title in the profile's display face.
-   - `RecapCard.tsx` — only when `chapter_position = middle`. 7s beat that says "Last time: <X>. Now: <Y>." in the profile's voice. Plain text on the profile's background; this is a reorientation moment, not a hook.
-   - `TerminalRun.tsx` — renders the PNG sequence between two timestamps. Use `<Img src={staticFile(\`<slug>/frames/\${pad(n)}.png\`)} />` driven by current frame mapped through `frame_times_s` from `timing.json`. For speed-ramped beats, scale the time mapping by `speedramp_factor`.
-   - `IdleCutCard.tsx` — the "…" placeholder for cut gaps.
-   - `Captions.tsx` — reads `transcript.json`. Use the **resolved `caption_style`** from Phase 2 (not raw config). For `band`, render a single two-line caption bar at the active word; for `karaoke`, render the active word highlighted in the profile's accent against a slightly dimmer baseline.
-   - `OutroCard.tsx` — closing card shaped by the **resolved `cta_shape`**:
-     - `next-steps` → "Now do X" with one concrete next-action line.
-     - `question` → on-screen question that invites a comment reply.
-     - `logo-card` → wordmark-only, no text ask (used by `chapter_position = last` and middle-chapter transitional outros).
+   **Two kinds of scene, two ways of building them:**
 
-   Additional scenes for the MP4 path:
-   - `ScreenPlayback.tsx` — `<OffthreadVideo src={staticFile(\`<slug>/source.mp4\`)} startFrom={...} endAt={...} />`. Copy the MP4 once into `<project>/public/<slug>/source.mp4` so `staticFile()` resolves it.
-   - `ZoomedSection.tsx` — wraps `ScreenPlayback` in a transform that interpolates `scale` from 1 → `zoom_factor` → 1 around a click anchor, with `translateX`/`translateY` set so the click point stays centered (clamp the offset so the visible window stays inside the source). Read anchor `t_s` and `x`/`y` from `zoom_anchors.json`. Use the active profile's easings.
-   - The same `Captions.tsx` used on the asciinema path works here too — `transcript.json` is the source of truth regardless of input shape.
+   **(a) Copy-and-adapt the reference scenes** for the timing-fragile beats. These ship tested in `${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scene-templates/` and exist so the fragile frame/zoom/caption math is **imported, never re-derived freehand each run** (that re-derivation was the root cause of run-to-run drift). Copy the whole set into `videos/<slug>/scenes/` and adapt props — do not retype the math:
+       ```bash
+       cp "${CLAUDE_PLUGIN_ROOT}/skills/screencast-cut/scene-templates/"{timing.ts,TerminalRun.tsx,Captions.tsx,ZoomedSection.tsx,SafeImg.tsx,SafeVideo.tsx} \
+          "<project>/videos/<slug>/scenes/"
+       ```
+       - `timing.ts` — the tested twin of `scripts/timing_math.py`. Every reference scene imports its math from here. **Never inline frame mapping, speed-ramp, zoom-clamp, or caption-timing arithmetic in a scene** — call the helper. If you think you need new math, add it to *both* `timing_math.py` and `timing.ts` with a test, don't sneak it into a `.tsx`.
+       - `TerminalRun.tsx` — plays the PNG sequence for one beat. Pass `frameTimesS` (from `timing.json`), `beatStartS` (cast-clock start), and `factor` (1 = realtime run beat, `speedramp_factor` = ramped beat). Mapping is time-based via `castTimeToFrameIndex`, so it holds the correct PNG across the non-uniform GIF frame spacing.
+       - `Captions.tsx` — reads `transcript.json`. Pass the **resolved `caption_style`** from Phase 2 (not raw config): `band` = clean caption bar, `karaoke` = per-word accent reveal. Works identically on the asciinema and MP4 paths — `transcript.json` is the source of truth regardless of input shape.
+       - `ZoomedSection.tsx` (MP4 path) — wraps the screen MP4 with one auto-zoom segment, centred on a `zoom_anchors.json` anchor via `clampZoomWindow` so the window never drifts outside the frame. Mount one per zoom segment in `Root.tsx`. Copy the MP4 once into `<project>/public/<slug>/source.mp4`.
+       - Check the import path at the top of each copied scene (`../../../src/brand/active`) resolves from `videos/<slug>/scenes/`; fix the depth if your project nests differently.
 
-4. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` as the sum of beat durations minus transition overlaps.
+   **(b) Author the card scenes freehand** — they have no fragile timing, so they stay simple local components. Reuse a profile component **only if the file exists** at `<project>/src/brand/profiles/<active>/components/<Name>.tsx`; the `default` profile ships none, so a default-profile cut scaffolds these fresh:
+       - `IntroCard.tsx` — wraps `WordmarkHero` (or whatever the active profile exposes) for the opener. Omit if `intro_frames = 0`.
+       - `ChapterCard.tsx` — only when a chapter title was extracted in Phase 2. Reuse `<active>/components/ChapterCard.tsx` or `TitleCard.tsx` if present; else scaffold a minimal version that types the chapter title in the profile's display face.
+       - `RecapCard.tsx` — only when `chapter_position = middle`. 7s "Last time: <X>. Now: <Y>." reorientation beat in the profile's voice.
+       - `IdleCutCard.tsx` — the "…" placeholder for cut gaps.
+       - `OutroCard.tsx` — shaped by the **resolved `cta_shape`**: `next-steps` → one concrete next-action line; `question` → on-screen question; `logo-card` → wordmark-only (used by `chapter_position = last` and middle-chapter transitional outros).
+
+   **cancelRender convention (load-bearing — do not skip).** Every visual asset (PNG frame, MP4) must be rendered through the `SafeImg` / `SafeVideo` wrappers you copied in (a), which call `cancelRender()` from `remotion` in `onError`. This converts "missing asset → silent black frame" (which a vision check might wave through) into a **deterministic `renderStill` failure** the Phase-4 verify loop catches every time. Audio is the one exception: use `SafeAudio` (in `SafeVideo.tsx`), which **warns only** — a missing voiceover should still ship a render. The card scenes you author freehand must use these wrappers too for any image/video they pull in. This requirement is mirrored in the `remotion-video` SKILL.md Phase 4 (the scene-authoring authority).
+
+4. **Wire the master** at `<project>/videos/<slug>/Root.tsx` using `<TransitionSeries>` from `@remotion/transitions`. Compute `durationInFrames` with `computeMasterDuration(beatDurations, transitionFrames)` from `./timing` — do not hand-add the overlaps (that arithmetic is the tested helper's job). For speed-ramped beats, the beat's output length is `speedrampOutputFrames(startIdx, endIdx, factor)`, also from `./timing`.
 
 5. **Register** the master composition in `<project>/src/Root.tsx` with composition `id` = the slug.
 
-6. **PNG-verify** each scene with `npx remotion still <slug> --frame=<midpoint> --scale=0.25 --output=videos/<slug>/.checks/<scene>.png` and read the PNG. Fix off-screen elements / text-overflow before moving on.
+6. **PNG-verify** each scene as you build it with `npx remotion still <slug> --frame=<midpoint> --scale=<screenshot_scale> --output=videos/<slug>/.checks/<scene>-<frame>.png` and read the PNG. Fix off-screen elements / text-overflow before moving on. This is the quick per-scene check; the whole-composition verify loop is step 7.
+
+7. **Run the bounded verify loop** once the master is wired. This is the shared render-verification harness (`render → look at the image → fix`), the single most important guard against run-to-run quality drift.
+
+   ```bash
+   python3 "<remotion-video plugin>/skills/remotion-video/scripts/verify_render.py" \
+       "<project>" "<slug>" \
+       --expect-duration-frames <computeMasterDuration result> \
+       --expect-width <w> --expect-height <h> \
+       --scale <verify_scale> --json
+   ```
+   Resolve the `verify_render.py` path the same way you resolve the playbook fallback (Phase 2 step 9): walk up from this SKILL.md to `plugins/`, then `remotion-video/skills/remotion-video/scripts/verify_render.py`. It reads the manifests under `videos/<slug>/source/`, renders a filmstrip into `videos/<slug>/.checks/`, and writes `verify-summary.json` + `filmstrip.md`.
+
+   **Loop (hard cap `MAX_VERIFY_ITERS = 3`):**
+   1. Run `verify_render.py`. Exit `3` = environment error (node/Remotion/manifests) — fix the environment, not the cut. Exit `2` = a deterministic gate or a still failed (`status: fail`): **fix the single failing gate** named in `verify-summary.json` (e.g. duration mismatch → recheck `computeMasterDuration`; a still failure → the `cancelRender` fired on a missing asset, fix the `staticFile` path/copy), then re-run the **full** check. If the *same* gate fails twice → escalate to the user with the summary.
+   2. When gates pass (exit `0`, `status: pass`), **judge the filmstrip against `RUBRIC.md`** (V1–V8). From iteration 2 on, hand this to a **fresh-eyes subagent** that receives ONLY `filmstrip.md` and `RUBRIC.md` (no project context) and returns a per-V verdict. Zero V-failures → **success**. Otherwise make the **smallest fix per V-item**, re-run `verify_render.py --stills-only`, re-judge. The *same* V-item on the *same* frame twice → escalate.
+   3. **Pass = `status: pass` AND zero V-failures.** A deterministic pass alone is not victory. On hitting `MAX_VERIFY_ITERS`, stop and escalate with the current summary, the outstanding failures, and the fixes you tried.
 
 ### Phase 5 — Iterate in Studio
 
@@ -400,7 +423,7 @@ These are the defaults the skill applies without asking. The user can override a
 ## Notes
 
 - `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code at load time. If unset, derive paths from this SKILL.md's location.
-- `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}` (used in Phase 2 step 9 for the playbook fallback) resolves the same way — Claude Code exposes one such variable per installed plugin. If it's not set, derive the path by walking up from this SKILL.md to the plugins root and appending `remotion-video/skills/remotion-video/templates/default/`.
+- `${CLAUDE_PLUGIN_ROOT_REMOTION_VIDEO}` (referenced in Phase 2 step 9 for the playbook fallback) may not be defined — do not depend on it. The reliable path is to walk up from this SKILL.md to the `plugins/` root and append `remotion-video/skills/remotion-video/templates/default/`. Prefer the env var only if it happens to be set.
 - The split between this skill (cuts source material into a project) and the `remotion-video` skill (renders projects, owns the brand profile system) is deliberate. **Do not merge their SKILL.md files.** They share the same project directory and brand-profile system, but the workflows are different shapes — prompt-to-video vs. recording-to-video.
 - Per-video subdirectories (`videos/<slug>/`) keep PLAN, scenes, source-frames, transcript, screenshot checks under `.checks/`, and the rendered MP4 colocated. The top-level `src/Root.tsx` is the registry.
 - Frames live under `<project>/public/<slug>/frames/` so `staticFile()` resolves them. The duplicated PNGs under `videos/<slug>/source/frames/` are kept as the working copy in case you want to re-render or hand-tweak.

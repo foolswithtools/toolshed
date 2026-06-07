@@ -1,0 +1,91 @@
+"""End-to-end gate: bundle + render the committed golden Remotion project for
+real and assert the verifier passes.
+
+Needs node + npm (the `golden_installed` fixture runs `npm ci` once; it skips if
+node/npm are absent or the install fails). node_modules is NOT committed.
+"""
+
+import json
+from pathlib import Path
+
+import pytest
+
+import verify_render as vr
+
+EXPECTED_DURATION = 250
+WIDTH, HEIGHT = 1920, 1080
+FPS = 30
+# Offsets matching the golden-cut layout (intro card is 45 frames).
+TRANSCRIPT_START = 45
+TERMINAL_START = 45
+MAX_STILLS = 10
+
+
+def _load(path):
+    return json.loads(Path(path).read_text())
+
+
+def test_golden_cut_renders_and_verifies(golden_installed):
+    project = golden_installed
+    rc = vr.main([
+        str(project), "golden-cut",
+        "--expect-duration-frames", str(EXPECTED_DURATION),
+        "--expect-width", str(WIDTH),
+        "--expect-height", str(HEIGHT),
+        "--scale", "0.5",
+        "--max-stills", str(MAX_STILLS),
+        "--transcript-start-frame", str(TRANSCRIPT_START),
+        "--terminal-start-frame", str(TERMINAL_START),
+    ])
+    assert rc == 0, "verify_render did not exit 0 on the golden project"
+
+    summary = _load(project / "videos" / "golden-cut" / ".checks" / "verify-summary.json")
+    assert summary["status"] == "pass"
+    assert summary["gates"]["bundle"]["pass"]
+    assert summary["gates"]["composition_exists"]["pass"]
+    assert summary["gates"]["dimensions"]["pass"]
+    assert summary["gates"]["duration"]["pass"]
+    assert summary["gates"]["duration"]["actual"] == EXPECTED_DURATION
+    assert summary["gates"]["stills_render"]["pass"]
+    assert summary["gates"]["stills_render"]["count"] > 0
+
+    # Every still rendered ok.
+    assert all(s["rendered"] for s in summary["filmstrip"]), \
+        "a filmstrip still failed to render"
+
+    # The filmstrip index set must equal the deterministic set computed from the
+    # committed manifests — proving the verifier is reproducible, not ad hoc.
+    timing = _load(project / "videos" / "golden-cut" / "source" / "timing.json")
+    transcript = _load(project / "videos" / "golden-cut" / "source" / "transcript.json")
+    expected = vr.compute_filmstrip_frames(
+        EXPECTED_DURATION,
+        FPS,
+        timing=timing,
+        transcript=transcript,
+        zoom=None,
+        transcript_start_frame=TRANSCRIPT_START,
+        terminal_start_frame=TERMINAL_START,
+        max_stills=MAX_STILLS,
+    )
+    expected_frames = sorted(e["frame"] for e in expected)
+    actual_frames = sorted(s["frame"] for s in summary["filmstrip"])
+    assert actual_frames == expected_frames
+
+
+def test_golden_cut_mp4_zoomed_section_renders(golden_installed):
+    """The MP4/ZoomedSection variant also bundles and renders (SafeVideo +
+    clampZoomWindow path)."""
+    project = golden_installed
+    rc = vr.main([
+        str(project), "golden-cut-mp4",
+        "--expect-duration-frames", "195",
+        "--expect-width", str(WIDTH),
+        "--expect-height", str(HEIGHT),
+        "--scale", "0.4",
+        "--max-stills", "6",
+        "--video-start-frame", "45",
+    ])
+    assert rc == 0
+    summary = _load(project / "videos" / "golden-cut-mp4" / ".checks" / "verify-summary.json")
+    assert summary["status"] == "pass"
+    assert all(s["rendered"] for s in summary["filmstrip"])

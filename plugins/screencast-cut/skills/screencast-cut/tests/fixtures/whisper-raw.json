@@ -1,0 +1,29 @@
+{
+  "model": {"type": "base.en"},
+  "params": {"language": "en"},
+  "result": {"language": "en"},
+  "transcription": [
+    {
+      "timestamps": {"from": "00:00:00,000", "to": "00:00:01,200"},
+      "offsets": {"from": 0, "to": 1200},
+      "text": " Hello world.",
+      "tokens": [
+        {"text": "[_BEG_]", "offsets": {"from": 0, "to": 0}},
+        {"text": " Hello", "offsets": {"from": 0, "to": 400}},
+        {"text": " world", "offsets": {"from": 400, "to": 900}},
+        {"text": ".", "offsets": {"from": 900, "to": 1200}},
+        {"text": "[_TT_60]", "offsets": {"from": 1200, "to": 1200}}
+      ]
+    },
+    {
+      "timestamps": {"from": "00:00:01,200", "to": "00:00:02,500"},
+      "offsets": {"from": 1200, "to": 2500},
+      "text": " Tests passed.",
+      "tokens": [
+        {"text": " Tests", "offsets": {"from": 1200, "to": 1700}},
+        {"text": " passed", "offsets": {"from": 1700, "to": 2300}},
+        {"text": ".", "offsets": {"from": 2300, "to": 2500}}
+      ]
+    }
+  ]
+}

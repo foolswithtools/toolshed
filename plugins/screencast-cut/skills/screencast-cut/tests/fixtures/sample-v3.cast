@@ -1,0 +1,10 @@
+{"version": 3, "width": 80, "height": 24, "term": {"cols": 80, "rows": 24, "type": "xterm-256color"}, "timestamp": 1700000000}
+[0.3, "o", "$ npm test\r\n"]
+[0.5, "o", "Running tests...\r\n"]
+[0.4, "o", "..."]
+[0.4, "o", "...\r\n"]
+[0.5, "o", "5 passed\r\n"]
+[3.7, "o", "$ npm run build\r\n"]
+[0.4, "o", "compiling\r\n"]
+[8.8, "o", "build done\r\n"]
+[0.4, "o", "$ "]

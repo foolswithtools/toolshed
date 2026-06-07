@@ -1,0 +1,6 @@
+[
+  {"type": "mouseDown", "processTimeMs": 3000, "x": 960, "y": 540, "button": "left", "elementTitle": "Run"},
+  {"type": "mouseUp", "processTimeMs": 3100, "x": 960, "y": 540, "button": "left"},
+  {"type": "mouseDown", "processTimeMs": 3150, "x": 970, "y": 545, "button": "left", "elementTitle": "RunAgainTooSoon"},
+  {"type": "mouseDown", "processTimeMs": 9000, "x": 1536, "y": 216, "button": "left", "elementTitle": "Save"}
+]

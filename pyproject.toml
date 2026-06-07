@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+# Minimal pytest config for the toolshed test suite. Tests live next to the
+# code they cover (scripts/test_*.py) and under each plugin's tests/ dir.
+# Pure-function tests always run; tests needing heavy tools (agg/ffmpeg/
+# whisper-cli/node) skip themselves when the tool is absent (see conftest).
+minversion = "7.0"
+addopts = "-q -ra"
+testpaths = [
+    "plugins/screencast-cut",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

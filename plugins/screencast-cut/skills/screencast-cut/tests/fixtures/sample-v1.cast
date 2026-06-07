@@ -1,0 +1,1 @@
+{"version": 1, "width": 80, "height": 24, "duration": 2.0, "command": null, "title": "v1 sample", "stdout": [[0.5, "hello "], [0.5, "world\r\n"], [1.0, "done\r\n"]]}
