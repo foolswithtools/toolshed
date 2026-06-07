@@ -159,6 +159,8 @@ For each beat in the approved plan:
 
 1. Create `<project>/videos/<slug>/scenes/<Name>.tsx` as an `AbsoluteFill`-rooted React component. Drive all animation from `useCurrentFrame()` and `useVideoConfig()`. **Import colors, fonts, easings, and durations from `src/brand/active` — never hardcode brand values.** That barrel re-exports from the active profile, so swapping profiles requires no scene-file edits. Reuse any promoted component from `src/brand/profiles/<active>/components/` when applicable.
 
+   **cancelRender convention for assets (load-bearing).** Any scene that pulls in an external file via `staticFile()` — an image, a video — must render it through a wrapper that calls `cancelRender()` from `remotion` in `onError`. The `default` template ships `SafeImg.tsx` and `SafeVideo.tsx` for exactly this; copy them into the project (e.g. `src/` or alongside the scenes) and use `<SafeImg>` / `<SafeVideo>` instead of bare `<Img>` / `<OffthreadVideo>`. Why: a missing or broken **visual** asset otherwise renders a silent black frame that a screenshot/vision check can wave through; routing it through `cancelRender()` turns it into a deterministic render failure instead. **Audio is the exception** — use `SafeAudio` (warn-only), because a missing soundtrack/voiceover should still ship a render rather than abort it. The `screencast-cut` skill depends on this convention for its automated verify loop.
+
 2. Wire scenes into a per-video master in `<project>/videos/<slug>/Root.tsx`:
    - Use `<TransitionSeries>` from `@remotion/transitions` with the per-beat transitions from the plan.
    - Compute `durationInFrames` for the master as the sum of beat durations minus transition overlaps (`TransitionSeries` shortens total duration by each transition's frames).
@@ -170,6 +172,15 @@ For each beat in the approved plan:
    (cd <project> && npx remotion still <slug> --frame=<midpoint-frame> --scale=<screenshot_scale> --output=videos/<slug>/.checks/<scene>-<frame>.png)
    ```
    Read the resulting PNG to confirm layout, alignment, and text legibility. Fix obvious issues before moving to the next scene — this catches off-screen elements, color clashes, and font issues without burning a full render.
+
+5. **Whole-composition verify (optional but recommended for multi-scene videos).** Once the master is wired, run the shared verifier to check the whole composition deterministically and produce a filmstrip for a vision pass:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/remotion-video/scripts/verify_render.py" \
+       "<project>" "<comp_id>" \
+       --expect-duration-frames <planned> --expect-width <w> --expect-height <h> \
+       --scale <verify_scale> --json
+   ```
+   It runs `bundle()` (compile gate), confirms the composition exists with the right dimensions and duration, and renders a filmstrip into `videos/<comp_id>/.checks/` (`filmstrip.md` + `verify-summary.json`). Exit `0` = deterministic gates pass, `2` = a gate/still failed, `3` = environment error. A still failure means a `SafeImg`/`SafeVideo` `cancelRender()` fired on a missing asset — fix the `staticFile` path. The `screencast-cut` skill wraps this in a bounded fix-and-re-judge loop against a rubric; for a hand-built video, reading `filmstrip.md` once after the gates pass is usually enough.
 
 ### Phase 5 — Iterate in Studio
 

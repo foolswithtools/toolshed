@@ -50,6 +50,9 @@ export const easings = {
   swiftOut: Easing.bezier(0.22, 1, 0.36, 1),
   softInOut: Easing.bezier(0.65, 0, 0.35, 1),
   pop: Easing.bezier(0.34, 1.56, 0.64, 1),
+  // Standard Material/Apple curve for camera moves (zoom, pan). Always present
+  // so scenes can rely on `easings.camera` without a fallback branch.
+  camera: Easing.bezier(0.4, 0, 0.2, 1),
 } as const;
 
 export const springs = {
