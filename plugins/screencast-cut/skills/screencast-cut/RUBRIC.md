@@ -90,6 +90,13 @@ showcase). On a cut with no icons, V9–V12 are N/A — do not flag.
   partially-drawn stroke, an in-between scale, a rotated spinner, particles in
   flight, or an intermediate morph shape.
 
+  *Deterministic backstop (Phase 1.1):* `tests/test_icons_motion.py` already
+  proves each recipe is **in motion** — it renders a guaranteed mid-animation
+  frame (progress 0.5) on a per-recipe probe composition and fails if the
+  start/mid/end stills are identical. So V9 here is only about recipe
+  *correctness* (does the motion read as the right gesture); "is it moving at
+  all" is machine-checked, not left to the eye.
+
 - **V10 — Brand recolor applied.** Any icon frame. *Fail* if an icon renders in
   a default color (black/white) instead of the active profile's accent, or the
   stroke is the library default rather than the themed color. *Good:* every icon

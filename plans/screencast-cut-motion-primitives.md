@@ -245,7 +245,7 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 
 ## PROGRESS — PHASE 1.1
 
-- [ ] P1.1-M1 — Mid-animation sampling + per-recipe motion assertion (mutation-checked)
+- [done] P1.1-M1 — Mid-animation sampling + per-recipe motion assertion (mutation-checked) — added `videos/golden-icons/MotionProbe.tsx` (6 single-primitive probe comps `motion-probe-{drawOn,popIn,spin,burst,morph,ripple}`, no Loop, 30-frame beat) registered in `src/Root.tsx`; `tests/test_icons_motion.py` renders frames 0/15/30 per probe and asserts non-identity + mid≠start (frame 15 = guaranteed progress 0.5). Mutation sanity-check: swapping drawOn → static placeholder made the test FAIL (1 distinct hash), reverted. RUBRIC V9 notes the deterministic backstop. tsc clean; 6 motion + 3 e2e tests green.
 
 ## PROGRESS — PHASE 2
 
