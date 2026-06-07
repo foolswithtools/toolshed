@@ -250,8 +250,8 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 ## PROGRESS — PHASE 2
 
 - [done] P2-M1 — `@remotion/lottie` wiring + `LottieIcon` scene (frame-deterministic) — added `@remotion/lottie@4.0.473` dep; `scene-templates/LottieIcon.tsx` (+ golden copy) supports `animationData` (in-repo) or `src` (BYO, staticFile→fetch behind `delayRender`/`continueRender`); `<Lottie>` maps useCurrentFrame so expression-free files render bit-identically. `golden-lottie` composition renders the owned-pulse fixture for real — verify_render exits 0, eyeballed: brand-cyan pulsing circle, non-blank. tsc clean.
-- [ ] P2-M2 — Expression vetting + best-effort recolor via `@lottiefiles/lottie-js`
-- [ ] P2-M3 — Licensing guardrail (no bundled third-party JSON; self-authored/CC0 only) + docs
+- [done] P2-M2 — Expression vetting + best-effort recolor via `@lottiefiles/lottie-js` — `scripts/lottie_ingest.py`: `find_expressions`/`assert_no_expressions` (rejects AE expressions — `x`-string discriminator, eased keyframes not flagged), `recolor_flat_fills` (flat `fl`/`st` → brand color, surfaces gradients/animated/expression colors as un-themable), CLI. `scripts/recolor_lottie.mjs` = the named-lib path (`@lottiefiles/lottie-js`, resolved from project root via createRequire). 14 ingest tests green incl. node-gated parity (lib recolor == python recolor → `[1,0.533,0,1]`).
+- [done] P2-M3 — Licensing guardrail (no bundled third-party JSON; self-authored/CC0 only) + docs — `tests/test_lottie_guardrail.py` scans tracked JSON via `git ls-files`, fails any Lottie-shaped file lacking an OWNED/CC0 `PROVENANCE` note (positive + negative controls green). owned-pulse + test fixtures carry PROVENANCE. USAGE.md "Bring-your-own Lottie" section ("we never ship your Lottie" + expression/recolor rules); SKILL.md Phase-4 Lottie escape-hatch bullet.
 - [ ] P2-M4 — `golden-lottie` composition + e2e + verify + RUBRIC; version + marketplace + USAGE
 
 <!-- Phases 3 and 4 are DEFERRED: do not add their PROGRESS sections or execute them until explicitly activated. This round stops at the Phase 2 gate. -->

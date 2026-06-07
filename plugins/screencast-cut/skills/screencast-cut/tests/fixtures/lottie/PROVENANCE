@@ -1,0 +1,19 @@
+PROVENANCE — Lottie test fixtures
+=================================
+
+Every Lottie JSON in this directory is ORIGINAL WORK authored in-repo for the
+screencast-cut Phase-2 ingest tests (tests/test_lottie_ingest.py). They are
+OWNED (equivalent to CC0 for our purposes) — license-clean to commit. No
+third-party Lottie is bundled anywhere in this repo.
+
+has-expressions.json
+  License: OWNED. A deliberately EXPRESSION-DRIVEN file (an AE expression on the
+  opacity property) used to prove the determinism guard rejects expressions.
+
+gradient-fill.json
+  License: OWNED. A flat gradient-fill file used to prove the recolor step
+  surfaces gradients as "couldn't theme" rather than mangling them.
+
+The canonical owned, expression-free, renderable fixture lives at
+tests/fixtures/golden-project/public/lottie/owned-pulse.json (see its own
+PROVENANCE). These two are intentionally "bad inputs" for the guards.

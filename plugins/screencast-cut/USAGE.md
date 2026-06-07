@@ -179,8 +179,33 @@ rarely need to touch this — it's there so icons match the rest of your videos.
 
 > Licensing note: only permissively-licensed icon sets are ever bundled or
 > pulled, and each is attributed in a `THIRD-PARTY-NOTICES` file next to the
-> icons. Lottie animations are **not** used (a later opt-in may add a
-> bring-your-own path for files you have the rights to).
+> icons.
+
+### Bring-your-own Lottie (advanced, from 0.6.0)
+
+If you already have a **Lottie** animation you have the rights to use, the cut
+can render it too — but Lottie is a deliberate **second-class citizen** beside
+the SVG icons above, with strict rules:
+
+- **We never ship your Lottie.** Your file is read from **your** path at render
+  time and is *never* copied into the repo or a plugin. The only Lottie files in
+  this project are ones we authored ourselves (CC0/owned, with a provenance
+  note). Pulling a file from LottieFiles/Lordicon/etc. and committing it is
+  blocked — those catalogs forbid redistributing the JSON.
+- **It must be expression-free.** After-Effects *expressions* read the clock and
+  **flicker** in headless renders. The ingest check
+  (`scripts/lottie_ingest.py`) **rejects** an expression-driven file with a clear
+  message — re-export it with expressions baked out, or use the SVG recipes.
+- **Recolor is best-effort.** Flat fills/strokes can be recolored to your brand
+  accent (`scripts/recolor_lottie.mjs`, or the Python path); gradients and
+  animated colors are left alone and reported as "couldn't theme". Lottie can't
+  be cleanly themed the way the SVG icons can.
+
+Ask for it by pointing at the file: *"render this Lottie at the end —
+`~/anims/confetti.json` — recolored to the accent."* Claude vets it, themes what
+it can, drops it in your project's `public/` (gitignored for your own files),
+and wires it through `@remotion/lottie`. **Prefer the SVG recipes** for anything
+they can do — Lottie is the escape hatch, not the default.
 
 ---
 
