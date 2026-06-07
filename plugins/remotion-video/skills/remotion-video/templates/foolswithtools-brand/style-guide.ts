@@ -126,6 +126,17 @@ export const durations = {
   transition: 10, // fast hard cuts mostly, with rare 10-frame fades
 } as const;
 
+// Theme-tunable motion defaults for animated icons. This brand is punk/pop, so
+// icons pop in punchy by default and use the hand-drawn "scribble" easing for
+// marker-style stroke reveals, with a denser particle burst. A per-use prop on
+// <AnimatedIcon> still wins. Precedence: config.json "motion" < this < per-use.
+export const motion = {
+  defaultRecipe: "popIn",
+  durationInFrames: 26,
+  easing: "scribble",
+  particleIntensity: 1.4,
+} as const;
+
 // Layout — chunky 2px borders are the site convention.
 export const layout = {
   safePadding: 100,

@@ -69,6 +69,22 @@ export const durations = {
   transition: 18,
 } as const;
 
+// Theme-tunable motion defaults for animated icons (screencast-cut motion
+// primitives). Only theme-level defaults belong here — no per-icon matrix. A
+// per-use prop on <AnimatedIcon> still wins. Resolution precedence:
+//   config.json "motion" defaults  <  this block  <  per-use override.
+export const motion = {
+  // Recipe used when a caller doesn't name one: drawOn|popIn|spin|burst|morph.
+  defaultRecipe: "drawOn",
+  // Default animation length, in frames.
+  durationInFrames: 30,
+  // Which `easings` curve drives stroke-draw / morph progress (a key of
+  // `easings` above, e.g. "pop" or "camera").
+  easing: "pop",
+  // 0..1+ scale on particle-based recipes (burst particle count, ripple rings).
+  particleIntensity: 1,
+} as const;
+
 export const layout = {
   safePadding: 96,
   cardPadding: 56,
