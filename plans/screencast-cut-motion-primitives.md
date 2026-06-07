@@ -249,7 +249,7 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 
 ## PROGRESS — PHASE 2
 
-- [ ] P2-M1 — `@remotion/lottie` wiring + `LottieIcon` scene (frame-deterministic)
+- [done] P2-M1 — `@remotion/lottie` wiring + `LottieIcon` scene (frame-deterministic) — added `@remotion/lottie@4.0.473` dep; `scene-templates/LottieIcon.tsx` (+ golden copy) supports `animationData` (in-repo) or `src` (BYO, staticFile→fetch behind `delayRender`/`continueRender`); `<Lottie>` maps useCurrentFrame so expression-free files render bit-identically. `golden-lottie` composition renders the owned-pulse fixture for real — verify_render exits 0, eyeballed: brand-cyan pulsing circle, non-blank. tsc clean.
 - [ ] P2-M2 — Expression vetting + best-effort recolor via `@lottiefiles/lottie-js`
 - [ ] P2-M3 — Licensing guardrail (no bundled third-party JSON; self-authored/CC0 only) + docs
 - [ ] P2-M4 — `golden-lottie` composition + e2e + verify + RUBRIC; version + marketplace + USAGE

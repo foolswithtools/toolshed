@@ -8,6 +8,7 @@ import {
   MOTION_PROBES,
   PROBE_DURATION,
 } from "../videos/golden-icons/MotionProbe";
+import { GoldenLottie, GOLDEN_LOTTIE_DURATION } from "../videos/golden-lottie/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -47,6 +48,16 @@ export const RemotionRoot: React.FC = () => {
         id="golden-icons"
         component={GoldenIcons}
         durationInFrames={GOLDEN_ICONS_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Lottie bring-your-own showcase (Phase 2): an owned, expression-free
+          fixture rendered via @remotion/lottie. */}
+      <Composition
+        id="golden-lottie"
+        component={GoldenLottie}
+        durationInFrames={GOLDEN_LOTTIE_DURATION}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
