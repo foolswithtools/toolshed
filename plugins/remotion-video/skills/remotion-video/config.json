@@ -5,5 +5,6 @@
   "height": 1080,
   "install_official_skills": true,
   "auto_start_studio": true,
-  "screenshot_scale": 0.25
+  "screenshot_scale": 0.25,
+  "verify_scale": 0.5
 }

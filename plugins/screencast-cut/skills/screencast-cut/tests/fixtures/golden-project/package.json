@@ -1,0 +1,23 @@
+{
+  "name": "golden-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Committed golden Remotion project — the screencast-cut end-to-end gate. node_modules is NOT committed; conftest runs `npm ci`.",
+  "scripts": {
+    "start": "remotion studio",
+    "render": "remotion render"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.473",
+    "@remotion/cli": "4.0.473",
+    "@remotion/renderer": "4.0.473",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.473"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "typescript": "5.4.5"
+  }
+}

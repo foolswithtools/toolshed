@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screencast-cut/timing.schema.json",
+  "title": "timing.json",
+  "description": "Output of cast_to_frames.py. The single source of truth for the per-PNG timeline of a terminal cast. Frame indices in idle_gaps collapse the cast-event clock and the GIF/PNG clock into one domain so the Remotion side never re-interpolates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cast_version",
+    "duration_s",
+    "fps",
+    "frame_count",
+    "png_count",
+    "frame_times_s",
+    "clock_drift_s",
+    "idle_gaps",
+    "events_summary"
+  ],
+  "properties": {
+    "cast_version": { "type": "integer", "enum": [1, 2, 3] },
+    "duration_s": { "type": "number", "minimum": 0 },
+    "fps": { "type": "integer", "minimum": 1 },
+    "frame_count": { "type": "integer", "minimum": 0 },
+    "png_count": { "type": "integer", "minimum": 0 },
+    "frame_times_s": {
+      "type": "array",
+      "items": { "type": "number", "minimum": 0 }
+    },
+    "clock_drift_s": { "type": "number", "minimum": 0 },
+    "idle_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_s", "end_s", "duration_s", "kind", "start_frame", "end_frame"],
+        "properties": {
+          "start_s": { "type": "number", "minimum": 0 },
+          "end_s": { "type": "number", "minimum": 0 },
+          "duration_s": { "type": "number", "minimum": 0 },
+          "kind": { "type": "string", "enum": ["speedramp", "cut"] },
+          "start_frame": { "type": "integer", "minimum": 0 },
+          "end_frame": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "events_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_count", "input_count"],
+      "properties": {
+        "output_count": { "type": "integer", "minimum": 0 },
+        "input_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "terminal": {
+      "type": "object",
+      "properties": {
+        "cols": { "type": ["integer", "null"] },
+        "rows": { "type": ["integer", "null"] }
+      }
+    }
+  }
+}

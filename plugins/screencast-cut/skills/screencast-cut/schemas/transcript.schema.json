@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screencast-cut/transcript.schema.json",
+  "title": "transcript.json",
+  "description": "Output of transcribe.py. Word-level transcript consumed by Captions.tsx. Times are seconds; null where whisper.cpp gave no offset.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["language", "model", "duration_s", "segments"],
+  "properties": {
+    "language": { "type": "string" },
+    "model": { "type": ["string", "null"] },
+    "duration_s": { "type": "number", "minimum": 0 },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_s", "end_s", "text", "words"],
+        "properties": {
+          "start_s": { "type": ["number", "null"] },
+          "end_s": { "type": ["number", "null"] },
+          "text": { "type": "string" },
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["start_s", "end_s", "text"],
+              "properties": {
+                "start_s": { "type": ["number", "null"] },
+                "end_s": { "type": ["number", "null"] },
+                "text": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

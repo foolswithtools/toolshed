@@ -1,0 +1,46 @@
+{
+  "cast_version": 2,
+  "duration_s": 15.4,
+  "fps": 30,
+  "frame_count": 10,
+  "png_count": 10,
+  "frame_times_s": [
+    0.0,
+    0.3,
+    0.8,
+    1.2,
+    1.6,
+    2.1,
+    5.8,
+    6.2,
+    15.0,
+    15.4
+  ],
+  "clock_drift_s": 0.0,
+  "idle_gaps": [
+    {
+      "start_s": 2.1,
+      "end_s": 5.8,
+      "duration_s": 3.7,
+      "kind": "speedramp",
+      "start_frame": 5,
+      "end_frame": 6
+    },
+    {
+      "start_s": 6.2,
+      "end_s": 15.0,
+      "duration_s": 8.8,
+      "kind": "cut",
+      "start_frame": 7,
+      "end_frame": 8
+    }
+  ],
+  "events_summary": {
+    "output_count": 9,
+    "input_count": 0
+  },
+  "terminal": {
+    "cols": 80,
+    "rows": 24
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screencast-cut/zoom_anchors.schema.json",
+  "title": "zoom_anchors.json",
+  "description": "Output of parse_events.py. Normalized click anchors (0..1, top-left origin) driving auto-zoom on the MP4 path.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "duration_s", "display", "anchors"],
+  "properties": {
+    "source": { "type": "string", "enum": ["polyrecorder-v2", "manual"] },
+    "duration_s": { "type": ["number", "null"], "minimum": 0 },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width_px", "height_px", "scale"],
+      "properties": {
+        "width_px": { "type": "integer", "minimum": 1 },
+        "height_px": { "type": "integer", "minimum": 1 },
+        "scale": { "type": "number", "minimum": 0 }
+      }
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["t_s", "x", "y"],
+        "properties": {
+          "t_s": { "type": "number" },
+          "x": { "type": "number", "minimum": 0, "maximum": 1 },
+          "y": { "type": "number", "minimum": 0, "maximum": 1 },
+          "button": { "type": "string" },
+          "label": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

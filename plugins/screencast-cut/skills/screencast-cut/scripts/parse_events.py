@@ -10,6 +10,15 @@ format used by Screenize (open-source, MIT-equivalent macOS recorder),
 which writes a `.screenize/recording/` package with separate JSON files
 per event class.
 
+  ⚠ UNVERIFIED: the polyrecorder-v2 field names below (`formatVersion`,
+  `processTimeMs`, `processTimeStartMs`, `display.widthPx`, `elementTitle`,
+  …) have NOT been validated against a real Screenize export on this machine.
+  They are our best reading of the schema. The manual path (option 2) IS
+  verified against a fixture. If you have a real recording, drop it in
+  tests/fixtures/screenize-pkg/ and tighten the assertions in
+  load_polyrecorder(). Until then, treat polyrecorder output as best-effort
+  and sanity-check the resulting zoom_anchors.json.
+
 This script accepts either:
 
   1. A polyrecorder-v2 package directory (the `recording/` folder
@@ -56,6 +65,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from schema_validate import validate, SchemaError
+
 
 POLYRECORDER_FORMAT_VERSION = 2
 
@@ -67,6 +79,11 @@ def load_polyrecorder(rec_dir):
         raise SystemExit(f"missing {meta_path}")
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
 
+    # Defensive: the polyrecorder-v2 schema is UNVERIFIED (see module docstring),
+    # so validate the shape we depend on rather than KeyError'ing mid-normalize.
+    if not isinstance(meta, dict):
+        raise SystemExit(f"{meta_path}: expected a JSON object at the top level")
+
     fmt = meta.get("formatVersion")
     if fmt != POLYRECORDER_FORMAT_VERSION:
         raise SystemExit(
@@ -75,11 +92,24 @@ def load_polyrecorder(rec_dir):
             f"Re-export with a compatible recorder, or add a migration."
         )
 
+    if not isinstance(meta.get("display"), dict):
+        raise SystemExit(
+            f"{meta_path}: missing or non-object `display` block — can't read "
+            f"widthPx/heightPx to normalize click coordinates."
+        )
+
     clicks = []
     # Files chunked as mouseclicks-0.json, mouseclicks-1.json, ...
     for clicks_file in sorted(rec_dir.glob("mouseclicks-*.json")):
         events = json.loads(clicks_file.read_text(encoding="utf-8"))
+        if not isinstance(events, list):
+            raise SystemExit(
+                f"{clicks_file}: expected a JSON array of click events, "
+                f"got {type(events).__name__}."
+            )
         for ev in events:
+            if not isinstance(ev, dict):
+                continue
             if ev.get("type") != "mouseDown":
                 continue
             clicks.append(ev)
@@ -153,6 +183,12 @@ def normalize_polyrecorder(loaded, debounce_ms):
 
 def normalize_manual(path, debounce_ms):
     raw = json.loads(path.read_text(encoding="utf-8"))
+    # Validate the human-authored file on READ so a typo gives a precise
+    # location ("clicks[0].t_s: required field missing") instead of a KeyError.
+    try:
+        validate(raw, "events.input", what=f"manual events file {path.name}")
+    except SchemaError as e:
+        raise SystemExit(str(e))
     display = raw.get("display") or {}
     w_px = int(display.get("width_px") or 1920)
     h_px = int(display.get("height_px") or 1080)
@@ -218,6 +254,11 @@ def main(argv):
         manifest = normalize_polyrecorder(loaded, args.debounce_ms)
     else:
         manifest = normalize_manual(target, args.debounce_ms)
+
+    try:
+        validate(manifest, "zoom_anchors", what="zoom_anchors.json")
+    except SchemaError as e:
+        raise SystemExit(str(e))
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     out_path = args.out_dir / "zoom_anchors.json"

@@ -22,11 +22,16 @@ Outputs:
     <output_dir>/timing.json
         {
           "cast_version": 2 | 3,
-          "duration_s": float,
+          "duration_s": float,               # cast-clock duration
           "fps": int,
-          "frame_count": int,
-          "frame_times_s": [float, ...],     # cast-time of each PNG
-          "idle_gaps": [{"start_s", "end_s", "duration_s"}, ...],
+          "frame_count": int,                # == len(frame_times_s)
+          "png_count": int,                  # PNGs on disk; asserted == frame_count
+          "frame_times_s": [float, ...],     # GIF/PNG timestamp of each PNG
+          "clock_drift_s": float,            # |GIF clock - cast clock| (diagnostic)
+          "idle_gaps": [                     # frame indices collapse the two clocks
+            {"start_s", "end_s", "duration_s", "kind", "start_frame", "end_frame"},
+            ...
+          ],
           "events_summary": {"output_count": int, "input_count": int}
         }
 
@@ -39,6 +44,12 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+# timing_math lives beside this script; ensure it's importable whether run as a
+# script (dir is sys.path[0]) or imported under test.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from timing_math import cast_time_to_frame_index
+from schema_validate import validate, SchemaError
 
 
 def parse_cast(cast_path):
@@ -114,12 +125,22 @@ def total_duration(events):
     return float(events[-1][0])
 
 
+# agg defaults to capping idle gaps at 5s and holding the final frame ~3s.
+# Both rewrite the timeline, which would put the GIF/PNG clock out of step with
+# the cast-event clock. We disable them so the PNG sequence is faithful to real
+# cast time — idle handling (speed-ramp / cut) is OUR job, done later in Remotion
+# from the idle_gaps manifest, not agg's.
+AGG_IDLE_TIME_LIMIT = 86400  # effectively uncapped
+
+
 def render_with_agg(cast_path, gif_path, theme, font_size, fps):
     cmd = [
         "agg",
         "--theme", theme,
         "--font-size", str(font_size),
         "--fps-cap", str(fps),
+        "--idle-time-limit", str(AGG_IDLE_TIME_LIMIT),
+        "--last-frame-duration", "0",
         str(cast_path),
         str(gif_path),
     ]
@@ -193,15 +214,42 @@ def main(argv):
     explode_to_pngs(gif_path, frames_dir)
     frame_times = probe_frame_times(gif_path)
 
+    # --- Invariants: the two clocks (cast-event time vs GIF/PNG time) must stay
+    # consistent, and the PNG sequence must line up 1:1 with frame_times. ---
+    png_files = sorted(frames_dir.glob("*.png"))
+    if len(png_files) != len(frame_times):
+        raise SystemExit(
+            f"frame desync: {len(png_files)} PNGs on disk vs {len(frame_times)} "
+            f"frames from ffprobe. This usually means ffmpeg handled "
+            f"'-fps_mode passthrough' differently than expected for this GIF."
+        )
+    if frame_times != sorted(frame_times):
+        raise SystemExit("frame_times_s is not monotonically non-decreasing")
+
+    # Collapse the two clocks at the manifest boundary: attach PNG indices to
+    # each gap so the Remotion side reads frame indices, never re-interpolating
+    # cast-seconds against GIF-seconds.
+    for g in gaps:
+        g["start_frame"] = cast_time_to_frame_index(g["start_s"], frame_times)
+        g["end_frame"] = cast_time_to_frame_index(g["end_s"], frame_times)
+
+    # Drift gauge: how far the GIF clock wandered from the cast clock.
+    cast_dur = total_duration(events)
+    gif_dur = frame_times[-1] if frame_times else 0.0
+    clock_drift_s = round(abs(gif_dur - cast_dur), 3)
+    drift_warn = clock_drift_s > max(0.5, 0.02 * cast_dur)
+
     output_count = sum(1 for (_, c, _) in events if c == "o")
     input_count = sum(1 for (_, c, _) in events if c == "i")
 
     manifest = {
         "cast_version": header.get("version"),
-        "duration_s": round(total_duration(events), 4),
+        "duration_s": round(cast_dur, 4),
         "fps": args.fps,
         "frame_count": len(frame_times),
+        "png_count": len(png_files),
         "frame_times_s": frame_times,
+        "clock_drift_s": clock_drift_s,
         "idle_gaps": gaps,
         "events_summary": {"output_count": output_count, "input_count": input_count},
         "terminal": {
@@ -209,6 +257,13 @@ def main(argv):
             "rows": header.get("height") or (header.get("term") or {}).get("rows"),
         },
     }
+    # Validate the manifest against its contract before writing, so a contract
+    # regression fails here instead of as a KeyError on the Remotion side.
+    try:
+        validate(manifest, "timing", what="timing.json")
+    except SchemaError as e:
+        raise SystemExit(str(e))
+
     (args.out_dir / "timing.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
@@ -217,6 +272,14 @@ def main(argv):
     print(f"timing: {args.out_dir / 'timing.json'}")
     print(f"idle gaps: {len(gaps)} ({sum(1 for g in gaps if g['kind']=='cut')} cuts, "
           f"{sum(1 for g in gaps if g['kind']=='speedramp')} speed-ramps)")
+    if drift_warn:
+        print(
+            f"WARNING: GIF clock drifted {clock_drift_s}s from the cast clock "
+            f"(cast {round(cast_dur, 3)}s vs GIF {round(gif_dur, 3)}s). Beats are "
+            f"anchored on frame indices so cuts still land correctly, but surface "
+            f"this in the Phase 3 plan.",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":

@@ -2,3 +2,7 @@ transcripts/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Remotion's headless-chrome / bundler cache, dropped in CWD when the verify
+# loop renders (e.g. running verify_render.py from the repo root).
+.remotion/

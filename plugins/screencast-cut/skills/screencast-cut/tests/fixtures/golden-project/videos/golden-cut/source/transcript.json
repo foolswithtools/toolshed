@@ -1,0 +1,26 @@
+{
+  "language": "en",
+  "model": "base.en",
+  "duration_s": 4.4,
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "text": "Running the tests.",
+      "words": [
+        {"start_s": 0.2, "end_s": 0.8, "text": "Running"},
+        {"start_s": 0.9, "end_s": 1.2, "text": "the"},
+        {"start_s": 1.3, "end_s": 2.0, "text": "tests."}
+      ]
+    },
+    {
+      "start_s": 2.4,
+      "end_s": 4.4,
+      "text": "Now building.",
+      "words": [
+        {"start_s": 2.4, "end_s": 3.0, "text": "Now"},
+        {"start_s": 3.1, "end_s": 4.4, "text": "building."}
+      ]
+    }
+  ]
+}

@@ -369,3 +369,41 @@ If a slice changes Phase 2 / Phase 3 behavior visibly, the "What you'll see, in 
 ### Memory
 
 After shipping, save a project memory noting which slices landed in which commit so future sessions don't propose them again.
+
+---
+
+## SHIPPED: hardening pass (2026-06-07)
+
+Before any of slices A/B/C, a **hardening pass** landed to make the existing
+pipeline trustworthy first (the user's complaint was run-to-run *inconsistency*,
+not missing features). This is the foundation the expansion slices now build on.
+
+**Branch:** `harden-screencast-cut` (off `main`; not yet merged/pushed at time of writing).
+
+**Commits:**
+- `7389b2c` — remotion-video: shared render-verification harness (`verify_render.py`
+  + `_verify_helper.mjs`), `SafeImg`/`SafeVideo`/`SafeAudio` wrappers, `easings.camera`,
+  cancelRender convention in SKILL Phase 4; plugin → 0.7.0, `verify_scale` 0.5.
+- `26723ac` — screencast-cut: tested timing-math core (`timing_math.py` + `timing.ts`
+  mirror, 28 tests), clock-drift invariants in `cast_to_frames.py`, JSON manifest
+  schemas + `schema_validate.py`, reference scenes that import their math, `RUBRIC.md`,
+  full `tests/` suite incl. a **real committed golden Remotion project**, `pyproject.toml`,
+  Phase-4 copy-and-adapt + bounded verify loop in SKILL.
+- `b581fe8` — gitignore `.remotion/` cache.
+
+**What now exists (and the expansion slices should reuse, not reinvent):**
+- A **verify harness**: `verify_render.py` runs deterministic gates (compile,
+  composition, dimensions, duration, every still renders) and emits a filmstrip
+  for a vision pass against `RUBRIC.md`. New scenes from slices A/B/C should be
+  exercised through it.
+- A **tested math core** (`timing_math.py` / `timing.ts`): add new fragile math
+  to *both* with a test; never inline it in a `.tsx`.
+- **Manifest contracts** (`schemas/*.schema.json`): any new manifest a slice
+  emits should get a schema and be validated on write.
+- A **golden project** under `tests/fixtures/golden-project/` that renders for
+  real — extend it (or add a sibling fixture) when a slice adds scene types.
+
+State at ship: `pytest plugins/screencast-cut` = 50 green; `verify_render.py`
+exits 0 on the golden project; guardrail + all JSON valid. Versions: screencast-cut
+0.4.0, remotion-video 0.7.0. Note from the original plan: 0.5.0 was reserved for
+the TTS slice — reconcile before reusing that number.

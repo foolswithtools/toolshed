@@ -1,0 +1,9 @@
+{
+  "display": {"width_px": 1920, "height_px": 1080, "scale": 2},
+  "duration_s": 20.0,
+  "clicks": [
+    {"t_s": 2.0, "x": 0.3, "y": 0.4, "label": "open"},
+    {"t_s": 2.1, "x": 0.31, "y": 0.41, "label": "dup-within-debounce"},
+    {"t_s": 8.0, "x": 0.8, "y": 0.2, "label": "run"}
+  ]
+}

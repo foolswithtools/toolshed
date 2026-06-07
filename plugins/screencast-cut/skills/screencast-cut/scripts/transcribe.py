@@ -37,6 +37,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from schema_validate import validate, SchemaError
+
 # whisper.cpp's whisper-cli only reads WAV. Anything else (mp3, m4a, aac,
 # opus, flac, mov, mp4 with embedded audio, etc.) needs to be transcoded
 # first. We delegate that to ffmpeg, which is already a documented prereq.
@@ -150,8 +153,9 @@ def reshape(raw):
     """Convert whisper.cpp JSON to our compact schema.
 
     whisper.cpp emits `transcription` (segments) with `tokens` carrying
-    per-token `t0`/`t1` in centiseconds. We aggregate tokens into words
-    by dropping leading-space markers and merging trailing punctuation.
+    per-token `t0`/`t1` offsets in milliseconds (whisper.cpp `offsets.from`/
+    `offsets.to`). We aggregate tokens into words by dropping leading-space
+    markers and merging trailing punctuation.
     """
     segments_out = []
     for seg in raw.get("transcription", []):
@@ -175,6 +179,7 @@ def reshape(raw):
                 if cur is not None:
                     words.append(cur)
                 cur = {
+                    # offsets are ms → seconds
                     "start_s": (t0 / 1000.0) if t0 is not None else None,
                     "end_s": (t1 / 1000.0) if t1 is not None else None,
                     "text": stripped,
@@ -228,6 +233,11 @@ def main(argv):
         cleanup()
     shaped = reshape(raw)
     shaped["model"] = shaped["model"] or args.model
+
+    try:
+        validate(shaped, "transcript", what="transcript.json")
+    except SchemaError as e:
+        raise SystemExit(str(e))
 
     args.output.write_text(json.dumps(shaped, indent=2) + "\n", encoding="utf-8")
     print(str(args.output))
