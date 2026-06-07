@@ -98,16 +98,31 @@ The heavy tools (agg, ffmpeg, whisper-cli, node, npx) are installed — do the *
 
 ---
 
-# PHASE 2 — Lottie bring-your-own hatch (DEFERRED — DO NOT EXECUTE until Phase 1 is signed off AND the human says go)
+# PHASE 1.1 — Golden-icons sampling rigor (quick fix; run FIRST this round)
 
-> This block is planned now for completeness. **A Phase-1 loop must STOP before this.** Do not start Phase 2 autonomously.
+The Phase-1 review noted the `golden-icons` filmstrip can sample frames in a recipe's hold/plateau window, so a recipe broken ONLY mid-animation could pass the deterministic gate and lean entirely on the human vision pass — the same shape as the earlier `ZoomedSection` gutter bug. Close that.
+
+## Definition of rock solid (Phase 1.1)
+1. For every recipe (`drawOn`, `popIn`, `spin`, `burst`, `morph`) + `ClickRipple` in `golden-icons`, the e2e renders a frame **guaranteed to be mid-animation** (not in the start/hold/end plateau).
+2. A deterministic **motion assertion** proves each recipe actually animates: render start / mid / end stills for the recipe and assert they are **not all identical** (a static or fallen-flat recipe → identical frames → hard failure). Limitation to document: this catches "no motion", not "wrong-but-still-moving recipe" — recipe *correctness* stays with the vision/RUBRIC pass.
+3. `pytest` green; pre-push green.
+
+## Milestone
+- **P1.1-M1** — Make the `golden-icons` sampling include a computed mid-animation frame per recipe beat (extend `verify_render`'s frame computation, or pass explicit probe frames from the composition layout), and add a test that renders start/mid/end per recipe scene and asserts pixel non-identity (PNG byte/hash compare). Update RUBRIC if needed.
+**Gate:** the motion-assertion test is green AND demonstrably catches a broken recipe — temporarily swap one recipe for a static placeholder, confirm the test FAILS, then revert. (Mutation sanity-check: a gate that can't fail proves nothing.)
+
+---
+
+# PHASE 2 — Lottie bring-your-own hatch (ACTIVE THIS ROUND, after Phase 1.1)
+
+> The human has signed off Phase 1 and activated Phase 2. This round: run **Phase 1.1, then Phase 2**, and **STOP at the Phase 2 gate**. Phases 3 and 4 below are DEFERRED — do not start them.
 
 ## Scope
 A *bring-your-own* path: the user points the plugin at a Lottie file **they** have the rights to; we render it locally with `@remotion/lottie` and **never bundle or redistribute the JSON**. Lottie is a second-class citizen — it cannot be cleanly theme-recolored and is only conditionally deterministic, so it sits beside the SVG system, not inside it.
 
 ## Definition of rock solid (Phase 2 exit condition)
-1. `pytest` green incl. a Lottie path that renders a **committed CC0/public-domain** Lottie fixture (license-safe to bundle) deterministically.
-2. The golden project gains a `golden-lottie` composition (CC0 fixture, **vetted to contain no After-Effects expressions**) that renders for real; `verify_render.py` exits 0.
+1. `pytest` green incl. a Lottie path that renders a **minimal Lottie fixture we AUTHOR ourselves** (owned → license-clean to bundle; a CC0 file is also fine — never a pulled third-party one) deterministically.
+2. The golden project gains a `golden-lottie` composition (the self-authored fixture, **vetted to contain no After-Effects expressions**) that renders for real; `verify_render.py` exits 0.
 3. **Expression-determinism guard**: an ingest check flags/rejects expression-driven Lottie files (which flicker headlessly) with a clear message.
 4. **Licensing guardrail enforced**: a check + docs make it impossible to accidentally commit third-party Lottie JSON; only CC0/user-supplied-at-runtime files are allowed.
 5. Recolor-where-feasible via `@lottiefiles/lottie-js` (MIT) for flat-fill files, documented as best-effort (gradients/expressions excluded).
@@ -120,7 +135,47 @@ A *bring-your-own* path: the user points the plugin at a Lottie file **they** ha
 - **P2-M4** — `golden-lottie` composition + e2e + verify + RUBRIC items; version bump + marketplace + USAGE.
 
 ## Loop protocol (Phase 2)
-Only after the human activates it: add a `## PROGRESS — PHASE 2` section, execute P2-M1…M4 with gates, then run **Definition of rock solid (Phase 2)** and stop.
+This round is active. After Phase 1.1, add a `## PROGRESS — PHASE 2` section, execute P2-M1…M4 with gates, run **Definition of rock solid (Phase 2)**, then **STOP and report**. Do NOT start Phase 3 or Phase 4 — each needs its own explicit go-ahead.
+
+---
+
+# PHASE 3 — Per-theme example animation packs (our engine; DEFERRED — needs explicit go-ahead)
+
+> Confirmed reframe: built with the **Phase-1 SVG engine**, NOT Lottie — bundleable, deterministic, theme-aware. (Originated Lottie per theme is Phase 4.)
+
+## Scope
+For each shipped demo theme (default, foolswithtools-brand, and any other demo themes the project ships), a small curated **example pack** — a set of `AnimatedIcon`/recipe usages tuned to that theme's motion personality via its `motion` block — that shows off the theme. Swapping the active theme changes the pack's motion. These are reference/demo compositions + a short gallery doc the skill can draw on when assembling a cut.
+
+## Definition of rock solid (Phase 3)
+1. An example pack exists for **every** shipped demo theme; each renders for real via a golden composition; `verify_render.py` exits 0; vision pass clean.
+2. **Theme-tunability demonstrated, not just asserted** — switching the theme visibly changes the same pack's motion (e.g. side-by-side stills differ in timing/easing/intensity).
+3. `pytest` green; gallery/SKILL docs updated; pre-push green.
+
+## Milestones (outline)
+- **P3-M1** — enumerate shipped demo themes; spec a small example-pack per theme (which icons/recipes, tuned by that theme's `motion` block).
+- **P3-M2** — a `golden-themes` (or per-theme) showcase composition rendering each pack; e2e + verify + RUBRIC items.
+- **P3-M3** — gallery doc + SKILL.md note on per-theme example packs; version bump + marketplace + USAGE.
+
+---
+
+# PHASE 4 — Originated Lottie per demo theme (DEFERRED — needs explicit go-ahead; depends on Phase 2)
+
+> The licensing-clean way to ship per-theme Lottie: we **author** one original Lottie motif per theme, so we OWN it (bundleable) and vet it expression-free (deterministic via Phase 2's `@remotion/lottie` path). This is NOT pulling third-party Lottie.
+
+## Scope
+One signature, original Lottie animation per shipped demo theme, in that theme's palette/personality, committed as an owned/CC0 asset, rendered through the Phase-2 `LottieIcon` integration.
+
+**Authoring approach:** prefer **programmatic/hand-authored simple Lottie JSON** (shape + keyframes, no expressions) generated in-repo — fully owned, deterministic, no After Effects needed. (AE + Bodymovin would allow richer motifs but is outside an autonomous loop's reach; note it as a manual upgrade path.) No recolor needed — authored directly in each theme's palette.
+
+## Definition of rock solid (Phase 4)
+1. One **original, owned, expression-free** Lottie per shipped demo theme, in that theme's palette, committed with a provenance/LICENSE note marking it an original work (distinct from BYO third-party Lottie).
+2. Each renders **deterministically** via the Phase-2 `LottieIcon` path; a golden composition renders them all for real; `verify_render.py` exits 0; vision pass clean.
+3. `pytest` green; pre-push green; version bump + marketplace + USAGE.
+
+## Milestones (outline)
+- **P4-M1** — per-theme Lottie motif spec; a small generator (or hand-authored JSON) emitting owned, expression-free Lottie in each theme's palette.
+- **P4-M2** — golden composition rendering each theme's Lottie via `LottieIcon`; e2e + verify + RUBRIC + provenance note.
+- **P4-M3** — docs + version + marketplace + pre-push.
 
 ---
 
@@ -187,3 +242,17 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 7. Licensing + pre-push clean (THIRD-PARTY-NOTICES, puller refuses non-permissive, tsc, guardrail, JSON, version+marketplace+USAGE) — ✓.
 
 **Phase 1 COMPLETE. Stopped before Phase 2 (Lottie) — requires explicit human go-ahead.**
+
+## PROGRESS — PHASE 1.1
+
+- [ ] P1.1-M1 — Mid-animation sampling + per-recipe motion assertion (mutation-checked)
+
+## PROGRESS — PHASE 2
+
+- [ ] P2-M1 — `@remotion/lottie` wiring + `LottieIcon` scene (frame-deterministic)
+- [ ] P2-M2 — Expression vetting + best-effort recolor via `@lottiefiles/lottie-js`
+- [ ] P2-M3 — Licensing guardrail (no bundled third-party JSON; self-authored/CC0 only) + docs
+- [ ] P2-M4 — `golden-lottie` composition + e2e + verify + RUBRIC; version + marketplace + USAGE
+
+<!-- Phases 3 and 4 are DEFERRED: do not add their PROGRESS sections or execute them until explicitly activated. This round stops at the Phase 2 gate. -->
+
