@@ -339,12 +339,13 @@ All three slices are additive. Existing prompts (`Source: foo.cast. Audio: bar.m
 Each slice ships as its own version bump and its own commit:
 
 > **Renumbered (2026-06-07):** `screencast-cut` **0.5.0 shipped the animated-icon
-> motion primitives** (see `plans/screencast-cut-motion-primitives.md`), not the
-> TTS slice. The slices below are bumped one minor each to avoid a collision:
+> motion primitives** and **0.6.0 shipped the bring-your-own Lottie hatch** (both
+> in `plans/screencast-cut-motion-primitives.md`), not the TTS slice. The slices
+> below are bumped to avoid those collisions:
 
-- Slice A: `screencast-cut` 0.6.0 ("Add ElevenLabs TTS via `Script:` input").
-- Slice B: 0.7.0 ("Detect fumble-and-retype regions in cast input").
-- Slice C: 0.8.0 ("Auto-trim idle stretches in screen-recording input").
+- Slice A: `screencast-cut` 0.7.0 ("Add ElevenLabs TTS via `Script:` input").
+- Slice B: 0.8.0 ("Detect fumble-and-retype regions in cast input").
+- Slice C: 0.9.0 ("Auto-trim idle stretches in screen-recording input").
 
 Update `.claude-plugin/marketplace.json` after every bump.
 
@@ -413,8 +414,9 @@ exits 0 on the golden project; guardrail + all JSON valid. Versions: screencast-
 the TTS slice — reconcile before reusing that number.
 
 > **Update (2026-06-07):** 0.5.0 was used by the animated-icon motion-primitives
-> slice instead (`plans/screencast-cut-motion-primitives.md`). The TTS slice (A)
-> is renumbered to 0.6.0, B→0.7.0, C→0.8.0 (see Versioning above). State now:
+> slice and **0.6.0 by the bring-your-own Lottie hatch** (both in
+> `plans/screencast-cut-motion-primitives.md`). The TTS slice (A) is renumbered
+> to 0.7.0, B→0.8.0, C→0.9.0 (see Versioning above). State now:
 > `pytest plugins/screencast-cut` green; `verify_render.py` exits 0 on
-> `golden-cut`, `golden-cut-mp4`, and the new `golden-icons`; screencast-cut
-> 0.5.0, remotion-video 0.7.1.
+> `golden-cut`, `golden-cut-mp4`, `golden-icons`, and the new `golden-lottie`;
+> screencast-cut 0.6.0, remotion-video 0.7.1.

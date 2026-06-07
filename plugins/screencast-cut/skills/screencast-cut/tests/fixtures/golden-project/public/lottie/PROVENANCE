@@ -1,0 +1,19 @@
+PROVENANCE — Lottie assets in this directory
+=============================================
+
+Every Lottie JSON committed here is ORIGINAL WORK authored by this project
+(or an explicitly CC0 file), so it is license-clean to bundle and redistribute.
+We do NOT commit third-party Lottie JSON — a user's own file is read from THEIR
+path at render time and is never copied into the repo.
+
+owned-pulse.json
+  License: OWNED (original work, authored in-repo for the screencast-cut Phase-2
+           Lottie showcase). Equivalent to CC0 for our purposes.
+  Author:  toolshed / screencast-cut
+  Notes:   Flat-fill, keyframed scale, NO After-Effects expressions (vetted by
+           scripts/lottie_ingest.py so it renders deterministically headlessly).
+           Palette: brand accent (#22d3ee ≈ rgba 0.133,0.827,0.933).
+
+This file is what the licensing guardrail (tests/test_lottie_guardrail.py) looks
+for: any Lottie-shaped JSON committed without an OWNED/CC0 provenance entry here
+fails the guardrail.

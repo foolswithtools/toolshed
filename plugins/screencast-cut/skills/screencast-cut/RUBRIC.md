@@ -90,6 +90,13 @@ showcase). On a cut with no icons, V9–V12 are N/A — do not flag.
   partially-drawn stroke, an in-between scale, a rotated spinner, particles in
   flight, or an intermediate morph shape.
 
+  *Deterministic backstop (Phase 1.1):* `tests/test_icons_motion.py` already
+  proves each recipe is **in motion** — it renders a guaranteed mid-animation
+  frame (progress 0.5) on a per-recipe probe composition and fails if the
+  start/mid/end stills are identical. So V9 here is only about recipe
+  *correctness* (does the motion read as the right gesture); "is it moving at
+  all" is machine-checked, not left to the eye.
+
 - **V10 — Brand recolor applied.** Any icon frame. *Fail* if an icon renders in
   a default color (black/white) instead of the active profile's accent, or the
   stroke is the library default rather than the themed color. *Good:* every icon
@@ -105,6 +112,22 @@ showcase). On a cut with no icons, V9–V12 are N/A — do not flag.
   click-ripple) frames. *Fail* if the ripple ring is drawn away from the labeled
   click point (wrong x/y), or is missing entirely at its anchor sample frame.
   *Good:* the ring is concentric on the anchor's normalized (x, y) position.
+
+### Bring-your-own Lottie (V13)
+
+Apply only to cuts that render a Lottie animation (e.g. the `golden-lottie`
+showcase). On a cut with no Lottie, V13 is N/A — do not flag.
+
+- **V13 — Lottie renders and is on-brand.** Look at the Lottie frames. *Fail* if
+  the Lottie cell is blank/black (failed to load — a bad `src`/`delayRender`
+  that never resolved), or renders in a colour clearly off the active palette
+  when the file was meant to be recolored. *Good:* the Lottie shape is visible,
+  recoloured toward the brand accent for flat-fill files (gradients excepted —
+  those are documented as not themeable), and looks consistent frame-to-frame
+  (no flicker — an expression-driven file that slipped the ingest guard would
+  jitter between renders; the deterministic check `test_icons_motion.py ::
+  test_golden_lottie_is_deterministic_and_animates` is the machine backstop for
+  that).
 
 ---
 

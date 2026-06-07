@@ -3,6 +3,12 @@ import { Composition } from "remotion";
 import { GoldenCut } from "../videos/golden-cut/Root";
 import { GoldenCutMp4 } from "../videos/golden-cut-mp4/Root";
 import { GoldenIcons, GOLDEN_ICONS_DURATION } from "../videos/golden-icons/Root";
+import {
+  MotionProbe,
+  MOTION_PROBES,
+  PROBE_DURATION,
+} from "../videos/golden-icons/MotionProbe";
+import { GoldenLottie, GOLDEN_LOTTIE_DURATION } from "../videos/golden-lottie/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -46,6 +52,30 @@ export const RemotionRoot: React.FC = () => {
         width={WIDTH}
         height={HEIGHT}
       />
+      {/* Lottie bring-your-own showcase (Phase 2): an owned, expression-free
+          fixture rendered via @remotion/lottie. */}
+      <Composition
+        id="golden-lottie"
+        component={GoldenLottie}
+        durationInFrames={GOLDEN_LOTTIE_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Per-recipe motion-probe compositions (one primitive each, no Loop) for
+          the deterministic motion assertion in tests/test_icons_motion.py. */}
+      {MOTION_PROBES.map((p) => (
+        <Composition
+          key={p.id}
+          id={p.id}
+          component={MotionProbe}
+          defaultProps={p.props}
+          durationInFrames={PROBE_DURATION}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      ))}
     </>
   );
 };
