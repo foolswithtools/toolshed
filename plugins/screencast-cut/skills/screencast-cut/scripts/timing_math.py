@@ -127,6 +127,28 @@ def clamp_zoom_window(x, y, zoom_factor):
     return (cx, cy)
 
 
+def zoom_focal_point(scale, cx, cy, zoom_factor):
+    """Focal point to keep centred at the current `scale`, eased from the frame
+    centre (0.5, 0.5) at scale 1 to the clamped click `(cx, cy)` at peak zoom.
+
+    Centring the click at EVERY scale (the naive `tx = W*(0.5 - scale*cx)`)
+    shifts the un-zoomed frame off-centre and exposes a background gutter at
+    scale 1, where the video is not large enough to cover the offset. Moving the
+    focal point with zoom progress keeps the video full-frame at scale 1 and
+    pans toward the click as it zooms in. Returns `(ecx, ecy)`; the scene maps
+    them to a translate:  tx = W*(0.5 - scale*ecx),  ty = H*(0.5 - scale*ecy).
+    At scale 1 this gives ecx=ecy=0.5 -> tx=ty=0 (identity, no gutter).
+    """
+    if zoom_factor <= 1:
+        return (0.5, 0.5)
+    progress = (scale - 1.0) / (zoom_factor - 1.0)
+    if progress < 0.0:
+        progress = 0.0
+    elif progress > 1.0:
+        progress = 1.0
+    return (0.5 + (cx - 0.5) * progress, 0.5 + (cy - 0.5) * progress)
+
+
 def caption_word_to_frame(word_start_s, fps):
     """Map a caption word's start time (seconds) to an output frame index."""
     return _round_half_up(word_start_s * fps)

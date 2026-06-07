@@ -12,10 +12,14 @@
 //
 // Geometry: with transform-origin at the top-left, the transform
 //   translate(Tx, Ty) scale(s)
-// maps element point (px, py) -> screen (Tx + s*px, Ty + s*py). To land the
-// clamped click centre (cx*W, cy*H) at the viewport centre (W/2, H/2):
-//   Tx = W * (0.5 - s*cx),  Ty = H * (0.5 - s*cy).
-// At s=1, cx=cy=0.5 this is a no-op, so the un-zoomed video is untouched.
+// maps element point (px, py) -> screen (Tx + s*px, Ty + s*py). To land a focal
+// point (ecx*W, ecy*H) at the viewport centre (W/2, H/2):
+//   Tx = W * (0.5 - s*ecx),  Ty = H * (0.5 - s*ecy).
+// The focal point itself eases from the frame centre (0.5,0.5) at s=1 to the
+// clamped click at peak zoom (zoomFocalPoint) — so at s=1 Tx=Ty=0 (the
+// un-zoomed video fills the frame with no gutter) and the camera pans to the
+// click as it zooms in. Centring the raw click at every scale would leave a
+// background gutter on the un-zoomed frame.
 
 import React from "react";
 import {
@@ -24,7 +28,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { clampZoomWindow } from "./timing";
+import { clampZoomWindow, zoomFocalPoint } from "./timing";
 import { SafeStaticVideo } from "./SafeVideo";
 import { palette, easings } from "../../../src/brand/active";
 
@@ -80,8 +84,11 @@ export const ZoomedSection: React.FC<ZoomedSectionProps> = ({
     },
   );
 
-  const tx = width * (0.5 - scale * cx);
-  const ty = height * (0.5 - scale * cy);
+  // Ease the focal point with zoom progress so the un-zoomed frame (scale 1)
+  // is centred with no gutter and the camera pans to the click as it zooms.
+  const [ecx, ecy] = zoomFocalPoint(scale, cx, cy, zoomFactor);
+  const tx = width * (0.5 - scale * ecx);
+  const ty = height * (0.5 - scale * ecy);
 
   return (
     <AbsoluteFill style={{ backgroundColor: palette.bg, overflow: "hidden" }}>

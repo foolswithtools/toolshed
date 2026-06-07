@@ -17,6 +17,7 @@ from timing_math import (
     speedramp_output_frames,
     compute_master_duration,
     clamp_zoom_window,
+    zoom_focal_point,
     caption_word_to_frame,
 )
 
@@ -159,6 +160,44 @@ def test_zoom_clamp_partial_axis():
     cx, cy = clamp_zoom_window(0.1, 0.5, 1.6)
     assert abs(cx - 0.3125) < 1e-9
     assert cy == 0.5
+
+
+# --- zoom_focal_point ---------------------------------------------------------
+
+def test_zoom_focal_point_identity_at_scale_one():
+    # At scale 1 the focal point is the frame centre regardless of the click,
+    # so the translate tx = W*(0.5 - 1*ecx) is exactly 0 -> no gutter.
+    assert zoom_focal_point(1.0, 0.3125, 0.4, 1.6) == (0.5, 0.5)
+
+
+def test_zoom_focal_point_full_pan_at_peak():
+    # At peak zoom the focal point is the clamped click.
+    ecx, ecy = zoom_focal_point(1.6, 0.3125, 0.4, 1.6)
+    assert abs(ecx - 0.3125) < 1e-9 and abs(ecy - 0.4) < 1e-9
+
+
+def test_zoom_focal_point_regression_no_gutter():
+    # The exact golden-cut-mp4 case that shipped a 360px gutter: click x=0.3
+    # clamps to cx=0.3125; the buggy formula gave tx = 1920*(0.5-0.3125)=360 at
+    # scale 1. With the eased focal point, tx must be 0.
+    cx, cy = clamp_zoom_window(0.3, 0.4, 1.6)
+    ecx, _ = zoom_focal_point(1.0, cx, cy, 1.6)
+    width = 1920
+    tx = width * (0.5 - 1.0 * ecx)
+    assert tx == 0.0
+
+
+def test_zoom_focal_point_monotonic_between():
+    # Focal point moves monotonically from centre toward the click as scale rises.
+    cx = 0.3125
+    xs = [zoom_focal_point(s, cx, 0.5, 1.6)[0] for s in (1.0, 1.2, 1.4, 1.6)]
+    assert xs[0] == 0.5
+    assert all(b <= a for a, b in zip(xs, xs[1:]))  # decreasing toward cx<0.5
+    assert abs(xs[-1] - cx) < 1e-9
+
+
+def test_zoom_focal_point_no_zoom():
+    assert zoom_focal_point(1.0, 0.2, 0.9, 1.0) == (0.5, 0.5)
 
 
 # --- caption_word_to_frame ----------------------------------------------------

@@ -127,6 +127,30 @@ export function clampZoomWindow(
   return [cx, cy];
 }
 
+/**
+ * Focal point to keep centred at the current `scale`, eased from the frame
+ * centre (0.5, 0.5) at scale 1 to the clamped click `[cx, cy]` at peak zoom.
+ *
+ * Centring the click at EVERY scale (`tx = W*(0.5 - scale*cx)`) shifts the
+ * un-zoomed frame off-centre and exposes a background gutter at scale 1. Moving
+ * the focal point with zoom progress keeps the video full-frame at scale 1 and
+ * pans toward the click as it zooms in. Returns `[ecx, ecy]`; the scene maps
+ * them to a translate: tx = W*(0.5 - scale*ecx), ty = H*(0.5 - scale*ecy).
+ * At scale 1 this gives ecx=ecy=0.5 -> tx=ty=0 (identity, no gutter).
+ */
+export function zoomFocalPoint(
+  scale: number,
+  cx: number,
+  cy: number,
+  zoomFactor: number,
+): [number, number] {
+  if (zoomFactor <= 1) return [0.5, 0.5];
+  let progress = (scale - 1) / (zoomFactor - 1);
+  if (progress < 0) progress = 0;
+  else if (progress > 1) progress = 1;
+  return [0.5 + (cx - 0.5) * progress, 0.5 + (cy - 0.5) * progress];
+}
+
 /** Map a caption word's start time (seconds) to an output frame index. */
 export function captionWordToFrame(wordStartS: number, fps: number): number {
   return Math.round(wordStartS * fps);
