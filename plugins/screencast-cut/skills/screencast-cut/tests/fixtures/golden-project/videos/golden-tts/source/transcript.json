@@ -1,0 +1,33 @@
+{
+  "language": "en",
+  "model": "base.en",
+  "duration_s": 4.9,
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 2.3,
+      "text": "Welcome to the screencast cut demo.",
+      "words": [
+        {"start_s": 0.1, "end_s": 0.6, "text": "Welcome"},
+        {"start_s": 0.7, "end_s": 0.9, "text": "to"},
+        {"start_s": 1.0, "end_s": 1.2, "text": "the"},
+        {"start_s": 1.3, "end_s": 1.8, "text": "screencast"},
+        {"start_s": 1.9, "end_s": 2.1, "text": "cut"},
+        {"start_s": 2.1, "end_s": 2.3, "text": "demo."}
+      ]
+    },
+    {
+      "start_s": 2.7,
+      "end_s": 4.9,
+      "text": "This narration was generated from a script.",
+      "words": [
+        {"start_s": 2.7, "end_s": 2.9, "text": "This"},
+        {"start_s": 3.0, "end_s": 3.5, "text": "narration"},
+        {"start_s": 3.6, "end_s": 3.8, "text": "was"},
+        {"start_s": 3.9, "end_s": 4.3, "text": "generated"},
+        {"start_s": 4.4, "end_s": 4.6, "text": "from a"},
+        {"start_s": 4.6, "end_s": 4.9, "text": "script."}
+      ]
+    }
+  ]
+}

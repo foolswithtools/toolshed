@@ -79,6 +79,21 @@ export const motion = {
   particleIntensity: 1,
 } as const;
 
+// Theme-tunable narration (screencast-cut Slice A / TTS). The skill reads this
+// block to pick the ElevenLabs voice + post-processing for a Script:-driven cut;
+// any field omitted falls through to config.json tts_* defaults. `voice` is the
+// theme default, `alternates` is the on-brand roster a prompt may pick from,
+// `voice_id` is the canonical source of truth. Precedence:
+//   config.json tts_* defaults < this block < per-prompt override.
+export const tts = {
+  voice: "Rachel",
+  voice_id: "21m00Tcm4TlvDq8ikWAM",
+  alternates: ["Bella", "Antoni"],
+  model: "eleven_multilingual_v2",
+  loudnorm: { I: -18, TP: -2, LRA: 11 },
+  voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.0 },
+} as const;
+
 export const layout = {
   safePadding: 96,
   cardPadding: 56,

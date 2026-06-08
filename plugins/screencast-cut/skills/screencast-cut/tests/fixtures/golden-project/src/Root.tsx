@@ -15,6 +15,7 @@ import {
 } from "../videos/golden-theme-lottie/Root";
 import { GoldenThemes, GOLDEN_THEMES_DURATION } from "../videos/golden-themes/Root";
 import { ThemeProbe, THEME_PROBES } from "../videos/golden-themes/ThemePack";
+import { GoldenTts, GOLDEN_TTS_DURATION } from "../videos/golden-tts/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -46,6 +47,17 @@ export const RemotionRoot: React.FC = () => {
         id="golden-cut-mp4"
         component={GoldenCutMp4}
         durationInFrames={GOLDEN_CUT_MP4_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Slice A (TTS): a cut whose narration came from a Script: input. The
+          committed OWNED fixture WAV (public/golden-tts/narration.wav) means
+          this renders without calling ElevenLabs. */}
+      <Composition
+        id="golden-tts"
+        component={GoldenTts}
+        durationInFrames={GOLDEN_TTS_DURATION}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}

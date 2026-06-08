@@ -1,0 +1,12 @@
+narration.wav — OWNED / CC0 test fixture.
+
+This file is NOT ElevenLabs output. It is a short synthetic tone generated
+locally with ffmpeg (`sine`, attenuated), then run through the exact production
+loudnorm pipeline in scripts/script_to_audio.py (mp3_to_loudnorm_wav →
+16 kHz mono, loudnorm I=-18 TP=-2 LRA=11). It stands in for a Script:-generated
+narration track so the golden render exercises the Slice A audio path WITHOUT
+calling the ElevenLabs API or committing any third-party / API-generated audio.
+
+Regenerate with the inline generator documented in
+tests/test_verify_render_e2e.py (test_golden_tts_*) or re-run the same
+ffmpeg sine → mp3_to_loudnorm_wav steps.

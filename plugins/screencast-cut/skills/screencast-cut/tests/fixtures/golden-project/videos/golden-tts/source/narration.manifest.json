@@ -1,0 +1,19 @@
+{
+  "provider": "elevenlabs",
+  "voice": "Rachel",
+  "voice_id": "21m00Tcm4TlvDq8ikWAM",
+  "model": "eleven_multilingual_v2",
+  "characters_used": 103,
+  "output_path": "public/golden-tts/narration.wav",
+  "on_brand": true,
+  "loudnorm": {
+    "I": -18,
+    "TP": -2,
+    "LRA": 11
+  },
+  "voice_settings": {
+    "stability": 0.45,
+    "similarity_boost": 0.75,
+    "style": 0.0
+  }
+}

@@ -50,6 +50,12 @@ def agg_available():
 
 
 @pytest.fixture
+def ffmpeg_available():
+    _require("ffmpeg")
+    _require("ffprobe")
+
+
+@pytest.fixture
 def whisper_available():
     _require("whisper-cli")
 
