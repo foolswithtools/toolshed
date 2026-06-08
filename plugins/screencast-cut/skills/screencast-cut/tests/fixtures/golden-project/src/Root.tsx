@@ -9,6 +9,8 @@ import {
   PROBE_DURATION,
 } from "../videos/golden-icons/MotionProbe";
 import { GoldenLottie, GOLDEN_LOTTIE_DURATION } from "../videos/golden-lottie/Root";
+import { GoldenThemes, GOLDEN_THEMES_DURATION } from "../videos/golden-themes/Root";
+import { ThemeProbe, THEME_PROBES } from "../videos/golden-themes/ThemePack";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -70,6 +72,32 @@ export const RemotionRoot: React.FC = () => {
           id={p.id}
           component={MotionProbe}
           defaultProps={p.props}
+          durationInFrames={PROBE_DURATION}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      ))}
+      {/* Per-theme example-pack showcase (Phase 3): the same pack under every
+          shipped demo theme, side-by-side, in each theme's palette + motion. */}
+      <Composition
+        id="golden-themes"
+        component={GoldenThemes}
+        durationInFrames={GOLDEN_THEMES_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Per-theme PROBES (one per theme) rendering the identical NEUTRAL pack —
+          same bg + icon color for all, so only the motion can differ between
+          them. tests/test_themes_e2e.py asserts two themes' stills are not
+          byte-identical: the deterministic theme-tunability gate. */}
+      {THEME_PROBES.map((p) => (
+        <Composition
+          key={p.id}
+          id={p.id}
+          component={ThemeProbe}
+          defaultProps={{ themeId: p.themeId }}
           durationInFrames={PROBE_DURATION}
           fps={FPS}
           width={WIDTH}
