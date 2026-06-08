@@ -14,6 +14,26 @@ owned-pulse.json
            scripts/lottie_ingest.py so it renders deterministically headlessly).
            Palette: brand accent (#22d3ee ≈ rgba 0.133,0.827,0.933).
 
+default-orbit.json   (screencast-cut Phase 4 — originated per-theme Lottie)
+  License: OWNED (original work, authored in-repo by scripts/gen_theme_lottie.py).
+           Equivalent to CC0 for our purposes.
+  Author:  toolshed / screencast-cut
+  Theme:   `default` (dark / premium). Palette: cyan accent #22d3ee + indigo
+           #6366f1 ring. A breathing cyan ring with an accent dot orbiting it.
+  Notes:   Flat fills/strokes, keyframed rotation + scale, NO After-Effects
+           expressions (vetted by scripts/lottie_ingest.py). Authored directly
+           in the theme palette — no recolor pass needed.
+
+foolswithtools-spark.json   (screencast-cut Phase 4 — originated per-theme Lottie)
+  License: OWNED (original work, authored in-repo by scripts/gen_theme_lottie.py).
+           Equivalent to CC0 for our purposes.
+  Author:  toolshed / screencast-cut
+  Theme:   `foolswithtools-brand` (pop-art / punk-zine). Palette: acid green
+           #CCFF00 star, 2px charcoal #1A1A1A ink border, hot-orange #F5471D
+           core. A chunky spinning spark with a punchy scale bounce.
+  Notes:   Flat fills/strokes + parametric star, keyframed rotation + scale, NO
+           After-Effects expressions (vetted by scripts/lottie_ingest.py).
+
 This file is what the licensing guardrail (tests/test_lottie_guardrail.py) looks
 for: any Lottie-shaped JSON committed without an OWNED/CC0 provenance entry here
 fails the guardrail.

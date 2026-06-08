@@ -153,6 +153,24 @@ Apply only to cuts that render the per-theme example packs (e.g. the
   backstop is `test_themes_e2e.py :: test_themes_differ_so_switching_changes_motion`
   (neutral palette held constant → any byte difference is motion).
 
+### Originated per-theme Lottie (V16)
+
+Apply only to cuts that render the originated per-theme Lottie motifs (e.g. the
+`golden-theme-lottie` showcase). On a cut without them, V16 is N/A — do not flag.
+
+- **V16 — Each theme's owned Lottie motif is on-brand and renders.** Look at the
+  `golden-theme-lottie` frames. *Fail* if either panel's motif is blank/black
+  (failed to load via the `src`/`delayRender` path), renders off its theme
+  palette, or is clipped. *Good:* the left panel is the `default` motif
+  (`default-orbit` — a cyan dot orbiting an indigo ring on near-black) and the
+  right is the `foolswithtools-brand` motif (`foolswithtools-spark` — an
+  acid-green star with a charcoal ink border and a hot-orange core on cream),
+  each authored directly in its theme palette, both clearly mid-motion (the dot
+  at a different orbit angle / the star at a different spin across frames). The
+  deterministic backstop is `test_theme_lottie.py ::
+  test_golden_theme_lottie_is_deterministic_and_animates` (same frame identical
+  across renders → no expression flicker; two frames differ → it animates).
+
 ---
 
 ## Verdict format (subagent → loop)
