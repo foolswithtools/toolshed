@@ -98,7 +98,10 @@ const Cell: React.FC<{
       color={color}
       size={size}
       startFrame={0}
-      durationInFrames={BEAT}
+      // Let the THEME drive duration (default 30 vs brand 26) so the pop cell
+      // genuinely exercises theme-driven settle timing. Falls back to BEAT only
+      // if a theme omits durationInFrames.
+      durationInFrames={theme.motion.durationInFrames ?? BEAT}
     />
   );
   return (
