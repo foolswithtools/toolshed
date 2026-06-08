@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screencast-cut/narration.schema.json",
+  "title": "narration.manifest.json",
+  "description": "Output of script_to_audio.py. Records how a narration WAV was generated from a Script: input (which provider/voice/model, character count, loudnorm target) so the Phase 3 Decisions table can show the audio provenance. The token is NEVER recorded here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "voice", "voice_id", "model", "characters_used", "output_path"],
+  "properties": {
+    "provider": { "type": "string", "enum": ["elevenlabs"] },
+    "voice": { "type": ["string", "null"] },
+    "voice_id": { "type": "string" },
+    "model": { "type": "string" },
+    "characters_used": { "type": "integer", "minimum": 0 },
+    "output_path": { "type": "string" },
+    "loudnorm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["I", "TP", "LRA"],
+      "properties": {
+        "I": { "type": "number" },
+        "TP": { "type": "number" },
+        "LRA": { "type": "number" }
+      }
+    },
+    "voice_settings": {
+      "type": "object"
+    },
+    "on_brand": { "type": "boolean" }
+  }
+}

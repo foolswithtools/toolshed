@@ -18,6 +18,8 @@ You need four tools (plus `asciinema` if you'll record terminal sessions). What 
 - `node` 18+ — runs the Remotion renderer
 - `asciinema` — *optional, only for the terminal-recording path*. Skip if you'll only ever use screen recordings (`.mp4` / `.mov`).
 
+(No extra install for TTS — the `Script:` path uses the ElevenLabs HTTP API. You only need an `ELEVENLABS_API_TOKEN`; see "Narration: bring audio, or just write the script" below. Skip it entirely if you always bring your own `Audio:`.)
+
 #### On Linux (Ubuntu / Debian)
 
 The two easy ones from apt:
@@ -113,10 +115,28 @@ Three things, in increasing order of "must-have":
 | Asset | Required? | Notes |
 |---|---|---|
 | **A recording** | Yes | A `.cast` from `asciinema rec`, or an `.mp4` / `.mov` screen capture from anything (CleanShot, QuickTime, OBS, Screenize). |
-| **An audio narration** | Recommended | A separate file — `.m4a`, `.mp3`, `.wav`. Without it, you get a silent video with no captions. With it, you get word-level synced captions. |
+| **Narration — audio OR a script** | Recommended | Either `Audio:` (a `.m4a`/`.mp3`/`.wav` you recorded) **or** `Script:` (a `.txt`/`.md` of narration text the plugin speaks with ElevenLabs TTS — see below). Either way you get word-level synced captions; without either you get a silent, caption-free video. |
 | **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data, your MP4 plays full-frame with captions over it — still fine. |
 
 That's the whole input surface.
+
+### Narration: bring audio, or just write the script
+
+You have two ways to give a video its voiceover:
+
+- **`Audio:` a file you recorded** — most control over performance. If you pass both `Audio:` and `Script:`, the audio wins (the script is ignored, with a heads-up).
+- **`Script:` a text file** — the plugin generates the voiceover for you with **ElevenLabs** text-to-speech, levels it with `ffmpeg loudnorm`, and feeds it into the same captioning pipeline. No microphone, no recording take.
+
+For the `Script:` path you need an **ElevenLabs API token**. The plugin looks for it, in order:
+
+1. the `ELEVENLABS_API_TOKEN` environment variable,
+2. any env file you point it at,
+3. `~/.envrc`,
+4. `~/.config/screencast-cut/secrets.env`.
+
+Set it any one of those ways. The token is never printed, logged, or written into the project. (No token is needed if you use `Audio:`.)
+
+**Picking a voice.** Each brand profile (theme) can declare its own default `voice` and an on-brand `alternates` roster in its `style-guide.ts` `tts` block; a video uses the active theme's voice unless you say `Voice: <name>` in the prompt. To see which voices your account has, ask the skill to run `list_voices.py`.
 
 ---
 
@@ -127,6 +147,12 @@ Open Claude Code in your Remotion project directory and paste a prompt like one 
 ### Tutorial from a terminal recording
 
 > "Use the screencast-cut skill. Source: `~/Recordings/demo.cast`. Audio: `~/Recordings/voiceover.m4a`. Make a tutorial showing how to use jq."
+
+### Tutorial with narration generated from a script (no recording take)
+
+> "Use the screencast-cut skill. Source: `~/Recordings/demo.cast`. Script: `~/notes/jq-script.md`. Voice: Bill. Make a 45-second jq tutorial."
+
+(The plugin speaks `jq-script.md` with ElevenLabs, loudnorms it, and captions it — you never record a voice take. Drop `Voice:` to use the active theme's default voice.)
 
 ### Tutorial from a screen recording
 
@@ -248,7 +274,7 @@ The skill runs in seven phases. You don't drive them — Claude does — but kno
 | 1 | Locating your Remotion project | "Found project at `~/videos-studio`. Slug: `demo-tutorial`." |
 | 2 | Reading your brand profile, classifying input, picking a playbook | A line naming your active profile and the detected genre (`tutorial` or `shortform`). |
 | 3 | Planning beats | A numbered beat list with durations, plus a small "Decisions" table showing which value came from config vs. playbook vs. your prompt. **Pause here — say "approve" or push back.** |
-| 4 | Building scene files + transcribing audio | Whisper runs locally (no network). Takes 10–60s depending on audio length. |
+| 4 | Building scene files + (if `Script:`) generating narration + transcribing audio | If you gave a `Script:`, ElevenLabs synthesizes the voiceover first (one network call), then Whisper transcribes it locally for captions. With `Audio:`, only Whisper runs (no network). Takes 10–60s depending on length. |
 | 5 | Studio preview | Claude opens `localhost:3000` in your browser. **Important: don't render from inside Studio.** Hit spacebar to play, scrub the timeline, comment on what's wrong. |
 | 6 | Render | One MP4 lands at `videos/<slug>/out.mp4`. Claude tells you the absolute path. |
 | 7 | Capture-learning prompt | One question with three options. Pick "Save as a rule" if it's a pattern, "Just a note" if it's video-specific, or "Skip." |
@@ -290,7 +316,7 @@ If after all three it's still stuck, file an issue at https://github.com/foolswi
 So you don't ask and get a polite "no":
 
 - It won't record your screen for you. Use CleanShot, Screenize, asciinema, OBS, or QuickTime.
-- It won't write your narration script or generate the voiceover audio. Bring your own audio.
+- It won't *write* your narration script for you — but if you hand it a `Script:`, it *will* generate the voiceover audio with ElevenLabs TTS (or bring your own with `Audio:`).
 - It won't generate background music. Use the `music-grab` plugin (also in toolshed) for that.
 - It won't render the final MP4 from inside Remotion Studio. Studio is for previewing. Claude runs the render via the CLI.
 - It won't make a video from "just a topic" — it edits source material. For prompt-from-scratch motion graphics, that's the `remotion-video` skill.

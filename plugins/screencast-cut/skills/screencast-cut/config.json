@@ -21,5 +21,11 @@
     "durationInFrames": 30,
     "easing": "pop",
     "particleIntensity": 1.0
-  }
+  },
+  "tts_provider": "elevenlabs",
+  "tts_default_voice": "Rachel",
+  "tts_default_voice_id": "21m00Tcm4TlvDq8ikWAM",
+  "tts_default_model": "eleven_multilingual_v2",
+  "tts_loudnorm": { "I": -18, "TP": -2, "LRA": 11 },
+  "tts_voice_settings": { "stability": 0.45, "similarity_boost": 0.75, "style": 0.0 }
 }

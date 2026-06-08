@@ -13,6 +13,70 @@ The slices are roughly independent. Recommended order: **A → B → C** (TTS fi
 
 ---
 
+## Execution addendum (2026-06-08) — READ THIS FIRST; it supersedes the steps above
+
+The plugin was hardened and the motion-primitives roadmap shipped (`screencast-cut` is now `0.8.0`). These slices now run on that harness — do NOT invent a parallel one. The decisions below are RESOLVED (adopt the recommendations; do not stop to ask). Execute **one slice per loop run, in order A → B → C**, each to its own "Definition of rock solid" gate, then STOP for the human's `/code-review` → push → PR → merge close-out. Commit on a branch (e.g. `expansion-slice-a`); do NOT push/PR/merge yourself.
+
+**Resolved decisions:**
+- **Slice A:** `Audio:` wins over `Script:` (warn that Script was ignored); voice name→id cache at `~/.cache/screencast-cut/voices.json`; plugin secrets fallback at `~/.config/screencast-cut/secrets.env`; **ElevenLabs only** (add a `tts_provider` seam in config but implement only ElevenLabs). API-key resolution order: `$ELEVENLABS_API_TOKEN` → source `/Users/t/_repos/foolswithtools/.envrc` → `~/.envrc` → `~/.config/screencast-cut/secrets.env` → fail with an actionable message. **Never echo the token** (`set +x` before curl; don't print env). Always `ffmpeg loudnorm` the generated audio. (See the project memory `feedback-tts-elevenlabs`.)
+- **Slice B:** `fumble_min_backspaces = 3`; `fumble_auto_cut = false` (surface fumble cuts for approval in the Phase-3 plan); ALSO detect Ctrl-U (kill-line, `\x15`) and Ctrl-W (kill-word, `\x17`) as fumble triggers in the same pass.
+- **Slice C:** start with mean-absolute pixel-diff on a downsampled grayscale (upgrade to SSIM only if false positives bite); mask a right-edge strip for the menubar clock; idle-cut placeholder is a **blurred frozen-frame card**, not the terminal "…" card; **no** scene-change/chapter detection in this slice.
+
+**Per-slice Definition of rock solid (the gate):**
+1. Any new *pure* math lives in the tested twins (`timing_math.py` ↔ `scene-templates/timing.ts`) or a new tested module with parity tests; any new manifest field gets a JSON schema + validation (mirror the existing `schemas/`).
+2. New scripts have **offline** unit tests; network/credit-spending paths (ElevenLabs for A) are **mocked in tests and gated/skippable** for any live call — commit an OWNED pre-generated narration WAV fixture so the golden render never calls the API.
+3. A golden-project path exercises the slice and **renders for real** with `verify_render.py` exiting 0 (A: a cut whose narration came from a `Script:`; B: a fixture cast with a fumble that gets cut; C: a fixture video with an idle stretch that gets trimmed/ramped).
+4. `pytest plugins/screencast-cut` green, **0 skips**, with `test_repo_sync.py` (SKILL/plugin.json version parity) and `test_timing_copies.py` (scene-copy parity) staying green.
+5. Pre-push ritual: brand-claim guardrail; every touched JSON valid; `tsc --noEmit` clean if any TS changed; version bump in **both** `plugin.json` and the SKILL.md `version:` frontmatter (A→0.9.0, B→0.10.0, C→0.11.0 — the guard enforces parity); `marketplace.json`; `USAGE.md`.
+6. Update this plan's PROGRESS for the slice; do NOT start the next slice in the same run.
+
+**Stale references to ignore:** the original slice bodies mention editing `~/videos-studio/` and testing in `~/videos-studio-fresh-test/` — those studio dirs don't exist; the **committed golden Remotion project** under `tests/fixtures/golden-project/` is the test vehicle now. Treat studio-path edits as "flag for the user," not loop work.
+
+## PROGRESS — EXPANSION SLICES
+
+- [x] Slice A — ElevenLabs TTS (`Script:` input) → **0.9.0** — DONE on branch
+  `expansion-slice-a` (committed, not pushed/merged; awaiting `/code-review` →
+  push → PR → merge). See "Slice A — done" below.
+- [ ] Slice B — fumble / backspace + Ctrl-U/W detection → 0.10.0
+- [ ] Slice C — screen-recording idle auto-trim → 0.11.0
+
+### Slice A — done (2026-06-08)
+
+Built on the existing harness (no parallel one):
+- **New scripts:** `scripts/script_to_audio.py` (Script→ElevenLabs→`ffmpeg
+  loudnorm`→16 kHz-mono `narration.wav` + `narration.manifest.json`) and
+  `scripts/list_voices.py` (account voices × themes that reference them).
+- **Key resolution** order `$ELEVENLABS_API_TOKEN` → `--envrc` files → `~/.envrc`
+  → `~/.config/screencast-cut/secrets.env` → actionable fail. Token never echoed
+  (urllib, not shelled curl; absent from manifest/errors).
+- **Voice resolution** name→id via `/v1/voices`, cached at
+  `~/.cache/screencast-cut/voices.json`. **Real-world finding:** the API returns
+  decorated names (`"Rachel - Social Media Narrator"`), so resolution matches the
+  short name before `" - "` (see `voice_aliases`/`alias_map`). `Audio:` wins over
+  `Script:`; `tts_provider` seam added, only ElevenLabs implemented.
+- **Schema:** `schemas/narration.schema.json` (validated on write).
+- **Config:** `tts_provider`, `tts_default_voice`/`_voice_id`/`_model`,
+  `tts_loudnorm`, `tts_voice_settings`. **Theme `tts` block** added to the golden
+  `default` profile's `style-guide.ts` (precedence `config < theme tts < prompt`);
+  studio-profile `tts` edits flagged for the user, not done here.
+- **Golden path:** new `golden-tts` composition + committed OWNED synthetic
+  `public/golden-tts/narration.wav` (PROVENANCE: NOT ElevenLabs output) so the
+  render never calls the API. `verify_render.py` exits 0 (real render).
+- **Tests:** `test_script_to_audio.py`, `test_list_voices.py` (network mocked),
+  plus `golden-tts` e2e render + fixture guard in `test_verify_render_e2e.py`.
+  `pytest plugins/screencast-cut` = **199 passed, 0 skips**; `test_repo_sync` and
+  `test_timing_copies` green; `tsc --noEmit` clean; guardrail + all JSON valid.
+- **Live verification (not committed):** real ElevenLabs synth with premade voice
+  `Bill` → 16 kHz WAV → Whisper transcript → real `golden-tts` render passed;
+  committed fixtures restored byte-identical afterward. (Account is free-tier:
+  "library/professional" voices 402 with a clear message; premade voices work.)
+- **Docs:** SKILL.md (Narration audio-OR-script, voice precedence, Phase 2 step 5
+  + Phase 4 step 1, config table, error handling, version 0.9.0) and USAGE.md
+  (narration section, `Script:` example, prereq/troubleshooting/limits updated).
+  `plugin.json` + `marketplace.json` descriptions bumped to mention TTS.
+
+---
+
 ## Background (why we're doing this)
 
 Two relevant facts from the 2026-05-12 conversation:
