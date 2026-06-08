@@ -17,6 +17,7 @@ from timing_math import (
     cast_time_to_frame_index,
     speedramp_frame_map,
     speedramp_output_frames,
+    video_beat_output_frames,
     compute_master_duration,
     clamp_zoom_window,
     zoom_focal_point,
@@ -111,6 +112,30 @@ def test_speedramp_output_frames_min_one():
 
 def test_speedramp_output_frames_realtime():
     assert speedramp_output_frames(0, 99, 1) == 100
+
+
+# --- video_beat_output_frames (Slice C twin) ---------------------------------
+
+def test_video_beat_output_frames_realtime():
+    # 2s @ 30fps realtime = 60 output frames.
+    assert video_beat_output_frames(0, 2, 30, 1) == 60
+
+
+def test_video_beat_output_frames_speedramp_rounds_half_up():
+    # 3s @ 30fps / 4 = 90/4 = 22.5 → round-half-up → 23 (matches JS Math.round).
+    assert video_beat_output_frames(13, 16, 30, 4) == 23
+
+
+def test_video_beat_output_frames_min_one():
+    assert video_beat_output_frames(5, 5, 30, 1) == 1
+
+
+def test_video_beat_output_frames_rejects_bad_args():
+    import pytest
+    with pytest.raises(ValueError):
+        video_beat_output_frames(0, 1, 30, 0)
+    with pytest.raises(ValueError):
+        video_beat_output_frames(2, 1, 30, 1)
 
 
 # --- compute_master_duration --------------------------------------------------

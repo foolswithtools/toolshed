@@ -92,6 +92,22 @@ def speedramp_output_frames(beat_start_frame, beat_end_frame, factor):
     return max(1, math.ceil(span / factor))
 
 
+def video_beat_output_frames(start_s, end_s, fps, factor=1):
+    """How many OUTPUT frames a video span [start_s, end_s] occupies at `factor`x.
+
+    Screen-recording idle-trim (Slice C) plays a source span via OffthreadVideo
+    with `playbackRate = factor`; the beat's Sequence length must be the source
+    duration divided by the factor, in output frames. factor=1 is a realtime run
+    beat; factor>1 is a speed-ramp. Always >= 1. The TS twin
+    `videoBeatOutputFrames` in `scene-templates/timing.ts` must match.
+    """
+    if factor <= 0:
+        raise ValueError("speedramp factor must be > 0")
+    if end_s < start_s:
+        raise ValueError("end_s must be >= start_s")
+    return max(1, _round_half_up((end_s - start_s) * fps / factor))
+
+
 def compute_master_duration(beat_durations, transition_frames):
     """TransitionSeries total = sum(beat durations) - sum(transition overlaps).
 

@@ -21,7 +21,7 @@
     {
       "name": "screencast-cut",
       "source": "./plugins/screencast-cut",
-      "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them, flags backspace/Ctrl-U/Ctrl-W fumble-and-retype regions as cut candidates, transcribes audio with Whisper for word-level captions, generates narration from a script via ElevenLabs TTS (loudnormed), adds on-brand animated icons (frame-deterministic motion primitives, with per-theme example packs and originated per-theme Lottie motifs) plus an optional bring-your-own Lottie hatch, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile so output matches the rest of your videos."
+      "description": "Edit a terminal recording (.cast) or screen capture (.mp4) into a finished tutorial video. Detects idle gaps and speed-ramps or cuts them — in terminal casts and screen recordings alike (pixel-diff idle detection for video) — flags backspace/Ctrl-U/Ctrl-W fumble-and-retype regions as cut candidates, transcribes audio with Whisper for word-level captions, generates narration from a script via ElevenLabs TTS (loudnormed), adds on-brand animated icons (frame-deterministic motion primitives, with per-theme example packs and originated per-theme Lottie motifs) plus an optional bring-your-own Lottie hatch, and emits a Remotion project that the remotion-video plugin can render. Reuses the active brand profile so output matches the rest of your videos."
     },
     {
       "name": "music-grab",

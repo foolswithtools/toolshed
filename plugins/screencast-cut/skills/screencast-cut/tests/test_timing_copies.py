@@ -28,6 +28,8 @@ SHARED_FILES = [
     "LottieIcon.tsx",
     "SafeImg.tsx",
     "SafeVideo.tsx",
+    "VideoRun.tsx",
+    "BlurredFrozenFrameCard.tsx",
 ]
 
 

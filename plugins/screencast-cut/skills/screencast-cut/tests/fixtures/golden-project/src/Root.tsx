@@ -17,6 +17,10 @@ import { GoldenThemes, GOLDEN_THEMES_DURATION } from "../videos/golden-themes/Ro
 import { ThemeProbe, THEME_PROBES } from "../videos/golden-themes/ThemePack";
 import { GoldenTts, GOLDEN_TTS_DURATION } from "../videos/golden-tts/Root";
 import { GoldenFumble, GOLDEN_FUMBLE_DURATION } from "../videos/golden-fumble/Root";
+import {
+  GoldenVideoIdle,
+  GOLDEN_VIDEO_IDLE_DURATION,
+} from "../videos/golden-video-idle/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -69,6 +73,17 @@ export const RemotionRoot: React.FC = () => {
         id="golden-fumble"
         component={GoldenFumble}
         durationInFrames={GOLDEN_FUMBLE_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Slice C (screen-recording idle-trim): an MP4 whose static stretches are
+          trimmed — a long dwell cut to a blurred frozen-frame card, a shorter
+          dwell speed-ramped 4× via OffthreadVideo playbackRate. */}
+      <Composition
+        id="golden-video-idle"
+        component={GoldenVideoIdle}
+        durationInFrames={GOLDEN_VIDEO_IDLE_DURATION}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}

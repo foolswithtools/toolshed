@@ -18,6 +18,8 @@
   "click_merge_window_ms": 1500,
   "fumble_min_backspaces": 3,
   "fumble_auto_cut": false,
+  "video_idle_sample_fps": 4,
+  "video_idle_pixel_diff_threshold": 2.0,
   "motion": {
     "defaultRecipe": "drawOn",
     "durationInFrames": 30,

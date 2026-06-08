@@ -116,7 +116,7 @@ Three things, in increasing order of "must-have":
 |---|---|---|
 | **A recording** | Yes | A `.cast` from `asciinema rec`, or an `.mp4` / `.mov` screen capture from anything (CleanShot, QuickTime, OBS, Screenize). |
 | **Narration — audio OR a script** | Recommended | Either `Audio:` (a `.m4a`/`.mp3`/`.wav` you recorded) **or** `Script:` (a `.txt`/`.md` of narration text the plugin speaks with ElevenLabs TTS — see below). Either way you get word-level synced captions; without either you get a silent, caption-free video. |
-| **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data, your MP4 plays full-frame with captions over it — still fine. |
+| **Click-event data** | Optional, MP4 only | Only needed if you want auto-zoom on clicks for a screen recording. CleanShot doesn't export this; Screenize does. Without click data your MP4 still gets idle-trimmed and captioned — you just don't get the click-zoom layer. |
 
 That's the whole input surface.
 
@@ -291,7 +291,7 @@ Phase 3 is the only place you really need to push back. Once you approve the pla
 
 - **Your audio is `.m4a` or `.mp3` and the transcription seems to fail silently.** — Should be auto-handled in screencast-cut 0.4.0+. If you're seeing it, run `/plugin marketplace update toolshed` — you're behind.
 
-- **Screen recording, no auto-zoom on clicks.** — Most screen recorders (OBS, SimpleScreenRecorder, CleanShot, QuickTime) burn click highlights into the pixels but don't export click coordinates as a sidecar file. Without a sidecar, the skill can't auto-zoom on clicks. Two options: re-record with a tool that exports an event stream (Screenize on macOS is one), or hand-author a small `events.json` listing click timestamps and screen positions. Claude can walk you through the manual file. Without either, your MP4 still plays full-frame with captions over it — you just don't get the zoom layer.
+- **Screen recording, no auto-zoom on clicks.** — Most screen recorders (OBS, SimpleScreenRecorder, CleanShot, QuickTime) burn click highlights into the pixels but don't export click coordinates as a sidecar file. Without a sidecar, the skill can't auto-zoom on clicks. Two options: re-record with a tool that exports an event stream (Screenize on macOS is one), or hand-author a small `events.json` listing click timestamps and screen positions. Claude can walk you through the manual file. Without either, your MP4 is still **idle-trimmed** (long static dwells get speed-ramped or cut, just like a terminal recording's pauses) and captioned — you just don't get the click-zoom layer.
 
 - **The video it generates looks generic, not your brand.** — The skill uses whatever profile is active in `<project>/src/brand/active.ts`. If that's `default`, you'll get default styling. Tell Claude "switch the active profile to `<your-profile>`" before kicking off, or include "use the `<profile>` profile" in your prompt.
 
