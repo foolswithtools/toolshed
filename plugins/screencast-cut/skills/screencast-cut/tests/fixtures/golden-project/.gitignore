@@ -2,3 +2,4 @@ node_modules/
 .checks/
 out/
 videos/*/out.mp4
+_cast.gif

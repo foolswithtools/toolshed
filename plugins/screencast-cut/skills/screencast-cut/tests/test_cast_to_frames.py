@@ -238,3 +238,16 @@ def test_full_pipeline_emits_fumble_regions(agg_available, tmp_path):
     # Frame indices land inside the PNG range and span forward.
     pngs = sorted((out / "frames").glob("*.png"))
     assert 0 <= f["start_frame"] < f["end_frame"] < len(pngs)
+
+    # Tie detection to the committed golden fixture the golden-fumble composition
+    # cuts on: regenerating from fumble.cast (same fps/default render) must
+    # reproduce that fixture's fumble region EXACTLY — so the composition's cut
+    # can't silently drift from what the detector actually produces.
+    golden = json.loads(
+        (FIXTURES / "golden-project" / "videos" / "golden-fumble"
+         / "source" / "timing.json").read_text()
+    )
+    assert manifest["fumble_regions"] == golden["fumble_regions"], (
+        "fumble region regenerated from fumble.cast differs from the committed "
+        "golden-fumble/source/timing.json that the composition cuts on"
+    )
