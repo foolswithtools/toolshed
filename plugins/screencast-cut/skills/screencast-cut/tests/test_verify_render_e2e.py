@@ -226,6 +226,52 @@ def test_golden_tts_narration_fixture_is_owned_and_valid(golden_dir):
     assert "token" not in body and "xi-api-key" not in body
 
 
+# golden-fumble: the Slice B (fumble detection) showcase. A cast with a
+# backspace fumble that gets cut — the fumble_regions[0] stretch (cast 1.0→3.6)
+# is dropped like an idle_cut (IdleCutCard), so the rendered video skips the
+# mistype and resumes on the corrected command.
+GOLDEN_FUMBLE_DURATION = 246
+GOLDEN_FUMBLE_MAX_STILLS = 8
+GOLDEN_FUMBLE_TERMINAL_START = 45
+
+
+def test_golden_fumble_renders_and_verifies(golden_installed):
+    project = golden_installed
+    rc = vr.main([
+        str(project), "golden-fumble",
+        "--expect-duration-frames", str(GOLDEN_FUMBLE_DURATION),
+        "--expect-width", str(WIDTH),
+        "--expect-height", str(HEIGHT),
+        "--scale", "0.5",
+        "--max-stills", str(GOLDEN_FUMBLE_MAX_STILLS),
+        "--terminal-start-frame", str(GOLDEN_FUMBLE_TERMINAL_START),
+    ])
+    assert rc == 0, "verify_render did not exit 0 on golden-fumble"
+
+    summary = _load(project / "videos" / "golden-fumble" / ".checks" / "verify-summary.json")
+    assert summary["status"] == "pass"
+    assert summary["gates"]["duration"]["actual"] == GOLDEN_FUMBLE_DURATION
+    assert summary["gates"]["stills_render"]["pass"]
+    assert all(s["rendered"] for s in summary["filmstrip"]), \
+        "a golden-fumble filmstrip still failed to render"
+
+
+def test_golden_fumble_timing_has_detected_fumble(golden_dir):
+    """Guard the Slice B fixture: the committed timing.json carries exactly the
+    detected fumble region, validated against the (updated) timing schema."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from schema_validate import validate
+
+    timing = _load(golden_dir / "videos" / "golden-fumble" / "source" / "timing.json")
+    validate(timing, "timing", what="timing.json")
+    assert len(timing["fumble_regions"]) == 1
+    f = timing["fumble_regions"][0]
+    assert f["kind"] == "fumble"
+    assert f["backspaces"] >= 3
+    assert f["start_frame"] < f["end_frame"]
+
+
 def test_golden_lottie_renders_and_verifies(golden_installed):
     """The bring-your-own Lottie path bundles and renders for real: the owned,
     expression-free fixture loads via staticFile → fetch behind delayRender and

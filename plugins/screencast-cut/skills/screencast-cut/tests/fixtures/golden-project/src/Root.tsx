@@ -16,6 +16,7 @@ import {
 import { GoldenThemes, GOLDEN_THEMES_DURATION } from "../videos/golden-themes/Root";
 import { ThemeProbe, THEME_PROBES } from "../videos/golden-themes/ThemePack";
 import { GoldenTts, GOLDEN_TTS_DURATION } from "../videos/golden-tts/Root";
+import { GoldenFumble, GOLDEN_FUMBLE_DURATION } from "../videos/golden-fumble/Root";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
 
 const FPS = 30;
@@ -58,6 +59,16 @@ export const RemotionRoot: React.FC = () => {
         id="golden-tts"
         component={GoldenTts}
         durationInFrames={GOLDEN_TTS_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
+      {/* Slice B (fumble detection): a cast with a backspace fumble that gets
+          cut — the fumble_regions[0] stretch is dropped like an idle_cut. */}
+      <Composition
+        id="golden-fumble"
+        component={GoldenFumble}
+        durationInFrames={GOLDEN_FUMBLE_DURATION}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}

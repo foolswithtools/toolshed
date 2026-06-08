@@ -94,6 +94,15 @@ export const tts = {
   voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.0 },
 } as const;
 
+// Theme-tunable edit cadence (screencast-cut). The skill reads this to decide
+// how aggressively to trim; any field omitted falls through to config.json
+// defaults. Precedence: config.json defaults < this block < per-prompt override.
+// (Slice B seeds the fumble knobs; idle/video knobs join here in later slices.)
+export const editing = {
+  fumble_min_backspaces: 3,
+  fumble_auto_cut: false,
+} as const;
+
 export const layout = {
   safePadding: 96,
   cardPadding: 56,
