@@ -308,16 +308,34 @@ def synthesize(text, voice_id, *, model, voice_settings, api_key):
     )
     try:
         with urllib.request.urlopen(req) as resp:
-            return resp.read()
+            ctype = (resp.headers.get("content-type") or "").lower()
+            data = resp.read()
     except urllib.error.HTTPError as e:
         body = ""
         try:
             body = e.read().decode("utf-8", "replace")[:500]
         except Exception:
             pass
-        raise SystemExit(f"ElevenLabs TTS error {e.code}: {body}")
+        # e.g. a too-long script (400) or free-tier voice (402) — surface the
+        # API's own message; omit the trailing colon when the body is empty.
+        detail = f": {body}" if body.strip() else ""
+        raise SystemExit(f"ElevenLabs TTS error {e.code}{detail}")
     except urllib.error.URLError as e:
         raise SystemExit(f"could not reach ElevenLabs TTS endpoint: {e.reason}")
+    # HTTP 200 is not proof of audio: quota/edge cases can return an empty body
+    # or a JSON error. Catch that here so it's a clear message, not a cryptic
+    # ffmpeg "Invalid data" downstream.
+    if not data:
+        raise SystemExit(
+            "ElevenLabs returned HTTP 200 with no audio — check the voice/model "
+            "and your account quota, then retry."
+        )
+    if "application/json" in ctype or data[:1] == b"{":
+        raise SystemExit(
+            "ElevenLabs returned a non-audio (likely error) response:\n"
+            + data.decode("utf-8", "replace")[:500]
+        )
+    return data
 
 
 def mp3_to_loudnorm_wav(mp3_bytes, out_path, loudnorm):
@@ -331,6 +349,8 @@ def mp3_to_loudnorm_wav(mp3_bytes, out_path, loudnorm):
             "ffmpeg not on PATH — needed to loudnorm/transcode the narration. "
             "Install with `brew install ffmpeg`."
         )
+    if not mp3_bytes:
+        raise SystemExit("no audio to transcode — synthesis returned empty bytes.")
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     af = "loudnorm=I={I}:TP={TP}:LRA={LRA}".format(**loudnorm)
