@@ -60,6 +60,18 @@ def _all_colors(node):
             yield from _all_colors(v)
 
 
+def _animated_keyframes(node):
+    """Yield the keyframe list of every animated property (`a:1`) in the tree."""
+    if isinstance(node, dict):
+        if node.get("a") == 1 and isinstance(node.get("k"), list):
+            yield node["k"]
+        for v in node.values():
+            yield from _animated_keyframes(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _animated_keyframes(v)
+
+
 # --------------------------------------------------------------------------- #
 # Offline: the files themselves are sound (no node required).
 # --------------------------------------------------------------------------- #
@@ -98,6 +110,22 @@ def test_motif_uses_theme_palette(fname, color):
         for c in colors
     )
     assert found, f"{fname} does not contain its theme signature color {color}"
+
+
+@pytest.mark.parametrize("fname", sorted(THEME_MOTIFS))
+def test_motif_actually_animates_offline(fname):
+    """Per-motif, offline: the motif has at least one animated property whose
+    keyframes actually change value. The composition-level e2e animates-test
+    renders BOTH motifs together, so a single frozen motif could hide behind the
+    other; this catches a static motif at the source (generator bug) per file."""
+    data = _load(LOTTIE_DIR / fname)
+    moving = False
+    for kf in _animated_keyframes(data):
+        values = [k.get("s") for k in kf if isinstance(k, dict) and "s" in k]
+        if len(values) >= 2 and any(v != values[0] for v in values[1:]):
+            moving = True
+            break
+    assert moving, f"{fname} has no animating property — it would render frozen"
 
 
 # --------------------------------------------------------------------------- #
