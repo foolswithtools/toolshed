@@ -280,5 +280,23 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 
 **Phase 3 COMPLETE. Stopped before Phase 4 (originated Lottie per theme) — requires explicit human go-ahead.**
 
-<!-- Phase 4 is DEFERRED: do not add its PROGRESS section or execute it until explicitly activated. This round stops at the Phase 3 gate. -->
+## PROGRESS — PHASE 4
+
+> Activated 2026-06-07. Originated (owned, expression-free) Lottie per shipped
+> demo theme = `default` + `foolswithtools-brand`, in each theme's palette,
+> rendered through the Phase-2 `LottieIcon` path. Branch: `motion-primitives-phase4`.
+> Authored in-repo (programmatic generator) — never pulled/bundled third-party.
+
+- [done] P4-M1 — Per-theme motif spec + generator → owned, expression-free Lottie per theme. `scripts/gen_theme_lottie.py` authors two motifs DIRECTLY in each theme's palette (no recolor): `default-orbit` (cyan #22d3ee breathing ring + orbiting accent dot, premium/dark) and `foolswithtools-spark` (acid-green #CCFF00 star, 2px charcoal #1A1A1A ink border, hot-orange #F5471D core, punchy spin — pop/punk). Emitted to both `scene-templates/lottie/` (shippable) and golden `public/lottie/` (rendered). PROVENANCE in both dirs marks them OWNED. **Gate:** `lottie_ingest --check-only` confirms both expression-free; JSON valid; guardrail + ingest tests green (17 passed).
+
+- [done] P4-M2 — `golden-theme-lottie` composition + e2e + verify + RUBRIC + provenance. New `videos/golden-theme-lottie/Root.tsx` renders BOTH owned motifs side-by-side (default-orbit on dark / foolswithtools-spark on cream) via the Phase-2 `LottieIcon` `src`→staticFile→fetch path; registered in `src/Root.tsx`. `verify_render` exits 0, status pass, all stills render (real render, eyeballed: cyan orbiting ring + acid star w/ charcoal border + orange core, both in palette, mid-motion, no clip). `tests/test_theme_lottie.py`: 8 tests — offline (expression-free, theme-palette-color present, both copies byte-identical) + e2e (renders+verifies) + determinism/animates (frame 9 byte-identical across renders, ≠ frame 24). RUBRIC V16 added. tsc clean. **Gate:** golden comp renders for real + verify exit 0 + tests green.
+
+- [done] P4-M3 — Docs + version + marketplace + pre-push. USAGE.md "Originated per-theme Lottie motifs (from 0.8.0)" subsection; SKILL.md Phase-4 bullet (owned, bundleable, regenerate via `gen_theme_lottie.py`). `screencast-cut` → 0.8.0 (SKILL frontmatter + plugin.json + marketplace.json descriptions mention originated per-theme Lottie motifs); TTS reservations renumbered A→0.9.0 / B→0.10.0 / C→0.11.0 in `screencast-cut-expansion.md`. **Gate:** full pre-push ritual green — guardrail OK, every touched JSON valid, tsc clean, `pytest plugins/screencast-cut` = 171 passed / 0 skips. Mutation-proven the determinism/animates gate FAILS when both motifs are frozen, then restored.
+
+### Definition of rock solid (Phase 4) — ALL PASS
+1. One ORIGINAL, OWNED, expression-free Lottie per shipped demo theme (`default-orbit`, `foolswithtools-spark`), authored DIRECTLY in each theme's palette, committed with OWNED provenance (PROVENANCE in `scene-templates/lottie/` + golden `public/lottie/`), distinct from BYO third-party Lottie — ✓.
+2. Each renders DETERMINISTICALLY via the Phase-2 `LottieIcon` path; `golden-theme-lottie` renders BOTH for real; `verify_render` exits 0, status pass; vision pass clean by eye (cyan orbiting ring on dark / acid star + charcoal border + orange core on cream, both mid-motion, in palette, no clip) — ✓.
+3. `pytest` green (171, 0 skips); pre-push green (guardrail + JSON + tsc + pytest); version bump (0.8.0) + marketplace + USAGE — ✓.
+
+**Phase 4 COMPLETE.** Committed on branch `motion-primitives-phase4` (not pushed/PR'd/merged — left for human review).
 

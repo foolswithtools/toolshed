@@ -9,6 +9,10 @@ import {
   PROBE_DURATION,
 } from "../videos/golden-icons/MotionProbe";
 import { GoldenLottie, GOLDEN_LOTTIE_DURATION } from "../videos/golden-lottie/Root";
+import {
+  GoldenThemeLottie,
+  GOLDEN_THEME_LOTTIE_DURATION,
+} from "../videos/golden-theme-lottie/Root";
 import { GoldenThemes, GOLDEN_THEMES_DURATION } from "../videos/golden-themes/Root";
 import { ThemeProbe, THEME_PROBES } from "../videos/golden-themes/ThemePack";
 import { computeMasterDuration } from "../videos/golden-cut/scenes/timing";
@@ -78,6 +82,17 @@ export const RemotionRoot: React.FC = () => {
           height={HEIGHT}
         />
       ))}
+      {/* Originated per-theme Lottie showcase (Phase 4): one OWNED,
+          expression-free Lottie motif per shipped demo theme — authored in that
+          theme's palette — rendered side-by-side via the Phase-2 LottieIcon path. */}
+      <Composition
+        id="golden-theme-lottie"
+        component={GoldenThemeLottie}
+        durationInFrames={GOLDEN_THEME_LOTTIE_DURATION}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+      />
       {/* Per-theme example-pack showcase (Phase 3): the same pack under every
           shipped demo theme, side-by-side, in each theme's palette + motion. */}
       <Composition

@@ -339,14 +339,15 @@ All three slices are additive. Existing prompts (`Source: foo.cast. Audio: bar.m
 Each slice ships as its own version bump and its own commit:
 
 > **Renumbered (2026-06-07):** `screencast-cut` **0.5.0 shipped the animated-icon
-> motion primitives**, **0.6.0 shipped the bring-your-own Lottie hatch**, and
-> **0.7.0 shipped the per-theme example animation packs** (all three in
+> motion primitives**, **0.6.0 shipped the bring-your-own Lottie hatch**, **0.7.0
+> shipped the per-theme example animation packs**, and **0.8.0 shipped the
+> originated per-theme Lottie motifs** (all four in
 > `plans/screencast-cut-motion-primitives.md`), not the TTS slice. The slices
 > below are bumped to avoid those collisions:
 
-- Slice A: `screencast-cut` 0.8.0 ("Add ElevenLabs TTS via `Script:` input").
-- Slice B: 0.9.0 ("Detect fumble-and-retype regions in cast input").
-- Slice C: 0.10.0 ("Auto-trim idle stretches in screen-recording input").
+- Slice A: `screencast-cut` 0.9.0 ("Add ElevenLabs TTS via `Script:` input").
+- Slice B: 0.10.0 ("Detect fumble-and-retype regions in cast input").
+- Slice C: 0.11.0 ("Auto-trim idle stretches in screen-recording input").
 
 Update `.claude-plugin/marketplace.json` after every bump.
 

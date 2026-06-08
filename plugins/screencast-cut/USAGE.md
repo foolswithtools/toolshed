@@ -218,6 +218,25 @@ it can, drops it in your project's `public/` (gitignored for your own files),
 and wires it through `@remotion/lottie`. **Prefer the SVG recipes** for anything
 they can do — Lottie is the escape hatch, not the default.
 
+**Originated per-theme Lottie motifs (from 0.8.0).** Separately from the
+bring-your-own hatch, the plugin ships one **signature Lottie motif per demo
+theme — authored by us**, so it's license-clean to bundle and reuse (OWNED,
+expression-free, deterministic). These are real Lottie (rendered through the same
+`@remotion/lottie` path), but unlike a BYO file they're committed in the theme's
+own palette, so there's nothing to recolor:
+
+- `default` → **`default-orbit`** — a cyan accent dot orbiting a breathing indigo
+  ring on near-black (the theme's calm, premium personality).
+- `foolswithtools-brand` → **`foolswithtools-spark`** — a chunky acid-green star
+  with a 2px charcoal ink border and a hot-orange core, spinning with a punchy
+  bounce (the pop-art / punk-zine personality).
+
+They live in `scene-templates/lottie/` (each with a `PROVENANCE` marking it
+OWNED); the worked `golden-theme-lottie` example renders both side-by-side. Ask
+for one by theme — *"drop the theme's signature Lottie motif on the outro."* To
+tweak or add a motif, edit/extend `scripts/gen_theme_lottie.py` and regenerate —
+it's hand-authored JSON (no After Effects), vetted expression-free on the way in.
+
 ---
 
 ## What you'll see, in order
