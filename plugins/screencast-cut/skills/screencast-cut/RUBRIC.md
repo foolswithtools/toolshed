@@ -129,6 +129,30 @@ showcase). On a cut with no Lottie, V13 is N/A — do not flag.
   test_golden_lottie_is_deterministic_and_animates` is the machine backstop for
   that).
 
+### Per-theme example packs (V14–V15)
+
+Apply only to cuts that render the per-theme example packs (e.g. the
+`golden-themes` showcase). On a cut without them, V14–V15 are N/A — do not flag.
+
+- **V14 — Each theme's pack is on-brand.** Look at the `golden-themes` frames.
+  *Fail* if a theme panel renders the icons in a colour clearly off that theme's
+  accent (e.g. cyan icons on the `foolswithtools-brand` cream panel, or
+  acid-green on the `default` dark panel), on the wrong canvas background, or
+  with a blank/black icon cell. *Good:* the left panel is the `default` theme
+  (cyan on near-black), the right is `foolswithtools-brand` (acid-green on
+  cream), each icon recoloured to its own theme accent, nothing clipped.
+
+- **V15 — Switching the theme visibly changes the motion.** Compare the same
+  icon cell across the two panels (the showcase) or across the two neutral probe
+  comps. *Fail* if the two themes render the pack identically (same recipe, same
+  draw progress, same particle density) — that would mean the `motion` block is
+  not driving the pack. *Good:* the difference is legible — e.g. the `sparkles`
+  cell is further drawn under `default` (`pop` easing) than under
+  `foolswithtools-brand` (`scribble` easing), and the `bell` burst is denser
+  under `foolswithtools-brand` (higher `particleIntensity`). The deterministic
+  backstop is `test_themes_e2e.py :: test_themes_differ_so_switching_changes_motion`
+  (neutral palette held constant → any byte difference is motion).
+
 ---
 
 ## Verdict format (subagent → loop)

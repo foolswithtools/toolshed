@@ -177,6 +177,17 @@ overrides it. The punk `foolswithtools-brand` profile, for instance, pops icons
 in with a hand-drawn easing by default, while `default` draws them on. You
 rarely need to touch this — it's there so icons match the rest of your videos.
 
+**Per-theme example packs (from 0.7.0).** Each shipped demo theme ships a small
+curated *example pack* — a handful of animated-icon usages tuned to that theme's
+motion personality — so you have an on-brand starting point instead of a blank
+page. The same pack reads differently under each theme: under `default` a check
+strokes itself on with a springy `pop`; under `foolswithtools-brand` it pops in
+with a hand-drawn `scribble` easing and a denser sparkle burst. Ask for it by
+name — *"add the default theme's flourish pack to the success beat"* — or just
+say *"give it some on-brand motion"* and Claude picks from the pack for your
+active theme. The gallery and the worked `golden-themes` example live in the
+plugin (`GALLERY-motion-themes.md`).
+
 > Licensing note: only permissively-licensed icon sets are ever bundled or
 > pulled, and each is attributed in a `THIRD-PARTY-NOTICES` file next to the
 > icons.

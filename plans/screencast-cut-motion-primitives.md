@@ -264,5 +264,21 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 
 **Phase 1.1 + Phase 2 COMPLETE. Stopped before Phase 3/4 (each needs explicit human go-ahead).**
 
-<!-- Phases 3 and 4 are DEFERRED: do not add their PROGRESS sections or execute them until explicitly activated. This round stops at the Phase 2 gate. -->
+## PROGRESS — PHASE 3
+
+> Activated 2026-06-07. Built with the **Phase-1 SVG engine** (NOT Lottie). Shipped
+> demo themes = `default` + `foolswithtools-brand`. Branch: `motion-primitives-phase3`.
+
+- [done] P3-M1 — Enumerate themes + spec the pack — shipped demo themes = `default` + `foolswithtools-brand` (the two `remotion-video` templates), each with its own `motion` block (they differ on every axis: recipe drawOn/popIn, dur 30/26, easing pop/scribble, intensity 1.0/1.4). Pack spec = 4 cells isolating each motion axis (headline=defaultRecipe, stroke=easing, burst=particleIntensity, pop=durationInFrames), written up in `GALLERY-motion-themes.md`.
+- [done] P3-M2 — `golden-themes` composition + e2e + verify + RUBRIC — made `AnimatedIcon` theme-aware via an optional `theme={{motion,easings}}` prop (backward-compatible; twin synced, `test_timing_copies` green); copied the `foolswithtools-brand` profile into the golden project; `videos/golden-themes/{Root,ThemePack}.tsx` = side-by-side showcase (`golden-themes`) + two neutral motion-only probes (`theme-pack-default`, `theme-pack-foolswithtools-brand`), registered in `src/Root.tsx`. `verify_render` exits 0 (status pass, all stills render). `test_themes_e2e.py`: showcase renders + theme-differ assertion (neutral palette held constant + label suppressed → any byte diff is motion). **Mutation-proven:** forcing both probes to the same `motion` made the differ-test FAIL with byte-identical hashes, then reverted. Vision pass clean by eye (cyan/dark vs acid/cream; sparkles pop-drawn vs scribble-mid-stroke; denser brand burst). RUBRIC V14–V15 added.
+- [done] P3-M3 — Docs + version + marketplace + pre-push — `GALLERY-motion-themes.md` (gallery + how-the-engine-is-parameterized); SKILL.md per-theme-pack bullet; USAGE.md "Per-theme example packs (from 0.7.0)" section. `screencast-cut` → 0.7.0 (plugin.json + marketplace.json descriptions mention per-theme packs); TTS reservations renumbered A→0.8.0/B→0.9.0/C→0.10.0 in `screencast-cut-expansion.md`. Pre-push ritual all green: guardrail OK, every touched JSON valid, tsc clean, `pytest plugins/screencast-cut` = 161 passed / 0 skips.
+
+### Definition of rock solid (Phase 3) — ALL PASS
+1. An example pack exists for EVERY shipped demo theme (`default` + `foolswithtools-brand`); each renders for real via `golden-themes`; `verify_render` exits 0; vision pass clean — ✓.
+2. Theme-tunability DEMONSTRATED, not just asserted — side-by-side showcase stills differ; neutral probes (identical palette, label suppressed) differ in motion only, mutation-proven the gate can fail — ✓.
+3. `pytest` green (161, 0 skips); gallery + SKILL + USAGE docs updated; pre-push green — ✓.
+
+**Phase 3 COMPLETE. Stopped before Phase 4 (originated Lottie per theme) — requires explicit human go-ahead.**
+
+<!-- Phase 4 is DEFERRED: do not add its PROGRESS section or execute it until explicitly activated. This round stops at the Phase 3 gate. -->
 

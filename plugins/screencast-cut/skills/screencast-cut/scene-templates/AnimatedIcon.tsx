@@ -12,6 +12,7 @@ import {
   burstParticles,
   resolveMotion,
   DEFAULT_MOTION,
+  type MotionSettings,
 } from "./timing";
 import {
   drawOnDash,
@@ -60,6 +61,18 @@ export interface AnimatedIconProps {
   spinTurns?: number;
   /** morph recipe: the destination icon (single compatible path). */
   morphTo?: IconDef;
+  /**
+   * Optional THEME override carrying a `motion` block and the profile `easings`
+   * map. When provided it replaces the active-profile defaults for this render
+   * (precedence unchanged: config `DEFAULT_MOTION` < theme < per-use prop). With
+   * no `theme` the component reads `src/brand/active` exactly as before, so this
+   * is backward-compatible. Used by the per-theme example packs to render the
+   * same pack under multiple themes in one composition.
+   */
+  theme?: {
+    motion: Partial<MotionSettings>;
+    easings: Record<string, (x: number) => number>;
+  };
 }
 
 const DEFAULT_SPRING: Partial<SpringConfig> = {
@@ -98,19 +111,26 @@ export const AnimatedIcon: React.FC<AnimatedIconProps> = ({
   burstRadius,
   spinTurns = 1,
   morphTo,
+  theme,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // Theme tokens come from the active profile unless an explicit `theme` prop
+  // overrides them (per-theme example packs). Either way precedence below is
+  // config < theme/profile < per-use.
+  const themeMotion = theme?.motion ?? brandMotion;
+  const themeEasings = theme?.easings ?? easings;
+
   // config < profile < per-use. Only the keys named per-use override.
-  const m = resolveMotion(DEFAULT_MOTION, brandMotion, {
+  const m = resolveMotion(DEFAULT_MOTION, themeMotion, {
     durationInFrames,
     easing,
     particleIntensity,
   });
   const duration = m.durationInFrames;
   const recipeName: RecipeName = recipe ?? (m.defaultRecipe as RecipeName);
-  const easingsMap = easings as unknown as Record<
+  const easingsMap = themeEasings as unknown as Record<
     string,
     (x: number) => number
   >;
