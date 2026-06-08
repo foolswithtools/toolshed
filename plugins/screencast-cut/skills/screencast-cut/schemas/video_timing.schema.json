@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "screencast-cut/video_timing.schema.json",
+  "title": "timing.json (video)",
+  "description": "Output of video_to_frames.py for a screen-recording (.mp4/.mov) source. idle_gaps use the SAME {start_s,end_s,duration_s,kind} shape as the cast path so the Remotion side shares the trim/speed-ramp logic — but seek by time (OffthreadVideo), so there are no PNG frame indices.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_type",
+    "duration_s",
+    "fps",
+    "sample_fps",
+    "sample_count",
+    "idle_gaps",
+    "video_path",
+    "video_dimensions"
+  ],
+  "properties": {
+    "source_type": { "type": "string", "enum": ["video"] },
+    "duration_s": { "type": "number", "minimum": 0 },
+    "fps": { "type": "integer", "minimum": 1 },
+    "sample_fps": { "type": "integer", "minimum": 1 },
+    "sample_count": { "type": "integer", "minimum": 0 },
+    "idle_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_s", "end_s", "duration_s", "kind"],
+        "properties": {
+          "start_s": { "type": "number", "minimum": 0 },
+          "end_s": { "type": "number", "minimum": 0 },
+          "duration_s": { "type": "number", "minimum": 0 },
+          "kind": { "type": "string", "enum": ["speedramp", "cut"] }
+        }
+      }
+    },
+    "video_path": { "type": "string" },
+    "video_dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["w", "h"],
+      "properties": {
+        "w": { "type": "integer", "minimum": 0 },
+        "h": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "pixel_diff_threshold": { "type": "number", "minimum": 0 }
+  }
+}

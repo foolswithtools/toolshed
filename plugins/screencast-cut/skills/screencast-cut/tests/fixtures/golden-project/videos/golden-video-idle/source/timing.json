@@ -1,0 +1,27 @@
+{
+  "source_type": "video",
+  "duration_s": 18.0,
+  "fps": 30,
+  "sample_fps": 4,
+  "sample_count": 72,
+  "idle_gaps": [
+    {
+      "start_s": 2.0,
+      "end_s": 10.75,
+      "duration_s": 8.75,
+      "kind": "cut"
+    },
+    {
+      "start_s": 13.0,
+      "end_s": 15.75,
+      "duration_s": 2.75,
+      "kind": "speedramp"
+    }
+  ],
+  "video_path": "/Users/t/_repos/foolswithtools/toolshed/plugins/screencast-cut/skills/screencast-cut/tests/fixtures/golden-project/public/golden-video-idle/source.mp4",
+  "video_dimensions": {
+    "w": 640,
+    "h": 360
+  },
+  "pixel_diff_threshold": 2.0
+}

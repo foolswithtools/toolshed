@@ -40,7 +40,56 @@ The plugin was hardened and the motion-primitives roadmap shipped (`screencast-c
 - [x] Slice B — fumble / backspace + Ctrl-U/W detection → **0.10.0** — DONE on
   branch `expansion-slice-b` (committed, not pushed/merged; awaiting
   `/code-review` → push → PR → merge). See "Slice B — done" below.
-- [ ] Slice C — screen-recording idle auto-trim → 0.11.0
+- [x] Slice C — screen-recording idle auto-trim → **0.11.0** — DONE on branch
+  `expansion-slice-c` (committed, not pushed/merged; awaiting `/code-review` →
+  push → PR → merge). See "Slice C — done" below.
+
+### Slice C — done (2026-06-08)
+
+Built on the existing harness (no parallel one); this completes A→B→C.
+- **Detector (pure, offline-tested):** `scripts/video_idle.py` —
+  `mean_abs_diff` (int16, no uint8 wraparound), `downsample_mask` (zeros the
+  **top-right menubar-clock box** so a ticking clock isn't "activity"),
+  `frame_diffs`, and `detect_idle_gaps` which emits the **same
+  `{start_s,end_s,duration_s,kind}` shape as `cast_to_frames.find_idle_gaps`**
+  (shared downstream). Mean-abs pixel diff on downsampled grayscale per the
+  resolved decision; SSIM is the documented escalation only. **No**
+  scene-change/chapter detection.
+- **I/O wrapper:** `scripts/video_to_frames.py` — ffprobe probe + ffmpeg
+  `fps,scale,format=gray` rawvideo (no PIL), mask, diff, detect → writes the
+  **video** `timing.json` (`source_type:"video"`, `video_path`,
+  `video_dimensions`, `sample_fps`) validated against new
+  `schemas/video_timing.schema.json` (idle_gaps have no PNG frame indices —
+  OffthreadVideo seeks by time).
+- **New tested twin math:** `video_beat_output_frames(startS,endS,fps,factor)`
+  added to BOTH `timing_math.py` and `scene-templates/timing.ts` (+ parity
+  tests); the render uses it for video beat lengths.
+- **Scenes:** `scene-templates/VideoRun.tsx` (plays a source span at `factor`
+  via OffthreadVideo `playbackRate`) + `scene-templates/BlurredFrozenFrameCard.tsx`
+  (the idle-CUT placeholder — a blurred `<Freeze>` frame + "skipped ahead" hint,
+  **not** the terminal "…" card). Both added to the `test_timing_copies`
+  `SHARED_FILES` byte-identical guard; all six golden `timing.ts` copies
+  re-synced for the new helper.
+- **Config:** `video_idle_sample_fps`(4) + `video_idle_pixel_diff_threshold`(2.0);
+  reuses `idle_threshold_speedramp_seconds`/`_cut_seconds`/`speedramp_factor`.
+- **Golden path:** committed 640×360 fixture `public/golden-video-idle/source.mp4`
+  (active→9s static→active→3s static→active) → `golden-video-idle` composition
+  that **cuts** the long dwell (BlurredFrozenFrameCard) and **speed-ramps** the
+  short dwell 4×; `verify_render.py` exits 0 (filmstrip confirms the blurred
+  "skipped ahead" card + active video frames).
+- **Tests:** offline `test_video_idle.py` (mean-abs, mask defeats corner clock,
+  cut/speedramp thresholds, shape parity) + ffmpeg-gated `test_video_to_frames.py`
+  + `video_beat_output_frames` twin tests + `golden-video-idle` e2e render +
+  fixture guard. `pytest plugins/screencast-cut` = **230 passed, 0 skips**;
+  `test_repo_sync` + `test_timing_copies` green; `tsc --noEmit` clean; guardrail
+  + all JSON valid.
+- **Docs:** SKILL.md (Phase 3b "Detect idle stretches" step + idle-trim content
+  beats + VideoRun/BlurredFrozenFrameCard copy set, config table, heuristics,
+  version 0.11.0), USAGE.md (idle-trim runs with or without click data),
+  `plugin.json` + `marketplace.json` descriptions.
+
+**All three expansion slices (A/B/C) are now built.** A and B are merged; C
+awaits review on `expansion-slice-c`.
 
 ### Slice B — done (2026-06-08)
 

@@ -86,6 +86,26 @@ export function speedrampOutputFrames(
 }
 
 /**
+ * How many OUTPUT frames a video span [startS, endS] occupies at `factor`x.
+ *
+ * Screen-recording idle-trim (Slice C) plays a source span via OffthreadVideo
+ * with `playbackRate = factor`; the beat's Sequence length must be the source
+ * duration divided by the factor, in output frames. factor=1 is a realtime run
+ * beat; factor>1 is a speed-ramp. Always >= 1. Twin of `video_beat_output_frames`
+ * in `scripts/timing_math.py`.
+ */
+export function videoBeatOutputFrames(
+  startS: number,
+  endS: number,
+  fps: number,
+  factor = 1,
+): number {
+  if (factor <= 0) throw new Error("speedramp factor must be > 0");
+  if (endS < startS) throw new Error("endS must be >= startS");
+  return Math.max(1, Math.floor(((endS - startS) * fps) / factor + 0.5));
+}
+
+/**
  * TransitionSeries total = sum(beat durations) - sum(transition overlaps).
  *
  * `transitionFrames` may be a scalar (same overlap between every adjacent pair)

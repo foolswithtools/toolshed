@@ -272,6 +272,50 @@ def test_golden_fumble_timing_has_detected_fumble(golden_dir):
     assert f["start_frame"] < f["end_frame"]
 
 
+# golden-video-idle: the Slice C (screen-recording idle-trim) showcase. An MP4
+# whose static stretches are trimmed — a long dwell cut to a BlurredFrozenFrameCard,
+# a shorter dwell speed-ramped 4× via OffthreadVideo playbackRate. Active stretches
+# play at 1×.
+GOLDEN_VIDEO_IDLE_DURATION = 338
+GOLDEN_VIDEO_IDLE_MAX_STILLS = 9
+GOLDEN_VIDEO_IDLE_VIDEO_START = 45
+
+
+def test_golden_video_idle_renders_and_verifies(golden_installed):
+    project = golden_installed
+    rc = vr.main([
+        str(project), "golden-video-idle",
+        "--expect-duration-frames", str(GOLDEN_VIDEO_IDLE_DURATION),
+        "--expect-width", str(WIDTH),
+        "--expect-height", str(HEIGHT),
+        "--scale", "0.5",
+        "--max-stills", str(GOLDEN_VIDEO_IDLE_MAX_STILLS),
+        "--video-start-frame", str(GOLDEN_VIDEO_IDLE_VIDEO_START),
+    ])
+    assert rc == 0, "verify_render did not exit 0 on golden-video-idle"
+
+    summary = _load(project / "videos" / "golden-video-idle" / ".checks" / "verify-summary.json")
+    assert summary["status"] == "pass"
+    assert summary["gates"]["duration"]["actual"] == GOLDEN_VIDEO_IDLE_DURATION
+    assert summary["gates"]["stills_render"]["pass"]
+    assert all(s["rendered"] for s in summary["filmstrip"]), \
+        "a golden-video-idle filmstrip still failed to render"
+
+
+def test_golden_video_idle_timing_has_cut_and_speedramp(golden_dir):
+    """Guard the Slice C fixture: the committed video timing.json validates
+    against the video_timing schema and carries exactly one cut + one speedramp."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from schema_validate import validate
+
+    timing = _load(golden_dir / "videos" / "golden-video-idle" / "source" / "timing.json")
+    validate(timing, "video_timing", what="timing.json")
+    assert timing["source_type"] == "video"
+    kinds = sorted(g["kind"] for g in timing["idle_gaps"])
+    assert kinds == ["cut", "speedramp"]
+
+
 def test_golden_lottie_renders_and_verifies(golden_installed):
     """The bring-your-own Lottie path bundles and renders for real: the owned,
     expression-free fixture loads via staticFile → fetch behind delayRender and
