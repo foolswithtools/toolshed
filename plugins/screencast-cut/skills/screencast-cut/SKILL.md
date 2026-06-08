@@ -37,6 +37,7 @@ Check up-front and stop with a clear install message if missing:
 | `ffmpeg` + `ffprobe` | GIF → PNG sequence, MP4 probing, audio extraction | `brew install ffmpeg` |
 | `whisper-cli` (whisper.cpp) | word-level transcription | `brew install whisper-cpp` |
 | `node` 18+ / `npx` | Remotion project (only needed at Phase 5 hand-off) | `brew install node` |
+| Python `numpy` | screen-recording idle detection (mean pixel-diff over sampled frames; only the `.mp4`/`.mov` idle-trim path) | `pip install numpy` |
 
 For Linux / Docker: equivalent packages — `agg` via `cargo install --git https://github.com/asciinema/agg`, ffmpeg/whisper.cpp via the distro package manager.
 

@@ -50,6 +50,27 @@ def test_detects_static_stretch_and_validates(tmp_path, ffmpeg_available):
     assert cut["duration_s"] >= 8.0
 
 
+def test_golden_video_idle_regenerates_to_committed_timing(tmp_path, ffmpeg_available):
+    """Tie detection to the committed golden fixture the composition cuts on:
+    re-running video_to_frames on the committed source.mp4 must reproduce the
+    golden-video-idle idle_gaps EXACTLY, so the cut/ramp can't silently drift
+    from what the detector actually finds (cf. the Slice B fumble tie)."""
+    here = Path(__file__).resolve().parent
+    mp4 = (here / "fixtures" / "golden-project" / "public" / "golden-video-idle"
+           / "source.mp4")
+    committed = json.loads(
+        (here / "fixtures" / "golden-project" / "videos" / "golden-video-idle"
+         / "source" / "timing.json").read_text()
+    )
+    out = tmp_path / "out"
+    v2f.main([str(mp4), str(out)])
+    gen = json.loads((out / "timing.json").read_text())
+    assert gen["idle_gaps"] == committed["idle_gaps"], (
+        "idle_gaps regenerated from the golden source.mp4 differ from the "
+        "committed golden-video-idle timing.json the composition cuts on"
+    )
+
+
 def test_short_static_is_speedramp_not_cut(tmp_path, ffmpeg_available):
     video = tmp_path / "rec.mp4"
     _make_video(video, active1=1, static=3, active2=1)
