@@ -32,6 +32,11 @@ Outputs:
             {"start_s", "end_s", "duration_s", "kind", "start_frame", "end_frame"},
             ...
           ],
+          "fumble_regions": [                # backspace/Ctrl-U/Ctrl-W corrections;
+            {"start_s", "end_s", "duration_s", "kind": "fumble",  # CUT CANDIDATES
+             "backspaces", "triggers", "start_frame", "end_frame"},  # (approve in
+            ...                                                       #  Phase 3)
+          ],
           "events_summary": {"output_count": int, "input_count": int}
         }
 
@@ -119,6 +124,115 @@ def find_idle_gaps(events, speedramp_threshold, cut_threshold):
     return gaps
 
 
+# Delete-key bytes a shell sees on stdin. Backspace is \x7f (DEL) on most
+# terminals, \x08 (BS) on some. Ctrl-U (\x15) kills the whole line, Ctrl-W
+# (\x17) kills the previous word — both are deliberate "scrap what I typed"
+# corrections, so they count as fumble triggers alongside a backspace run.
+_BACKSPACE = ("\x7f", "\x08")
+_KILL = {"\x15": "kill-line", "\x17": "kill-word"}
+_DELETE = set(_BACKSPACE) | set(_KILL)
+
+
+def _count_deletes(data):
+    """(backspaces, [kill triggers]) for one input event's data string."""
+    bs = sum(data.count(ch) for ch in _BACKSPACE)
+    kills = [name for ch, name in _KILL.items() for _ in range(data.count(ch))]
+    return bs, kills
+
+
+def _is_delete_event(data):
+    return bool(data) and all(ch in _DELETE for ch in data)
+
+
+def _is_boundary_event(data):
+    """A command submit (Enter) — resets the 'current line being typed'."""
+    return "\r" in data or "\n" in data
+
+
+def find_fumble_regions(events, min_backspaces=3):
+    """Find "fumble-and-retype" stretches in the input stream.
+
+    A fumble = a run of deletes big enough to look like a real correction:
+    >= `min_backspaces` consecutive backspaces, OR any Ctrl-U/Ctrl-W kill. The
+    region spans from where the bad typing started (the current line, anchored
+    at the last Enter) through the first recovery keystroke after the deletes,
+    so cutting [start_s, end_s] drops the whole mistype-and-fix.
+
+    Needs `i` (input) events — a cast recorded without stdin yields none, so
+    this returns []. Returns list of dicts with start_s/end_s/duration_s,
+    kind="fumble", backspaces (int), triggers (sorted unique). Overlapping or
+    touching regions are merged.
+    """
+    inputs = [(t, data) for (t, code, data) in events if code == "i"]
+    if not inputs:
+        return []
+
+    regions = []
+    j = 0
+    n = len(inputs)
+    while j < n:
+        if not _is_delete_event(inputs[j][1]):
+            j += 1
+            continue
+        # Maximal run of consecutive delete events [j .. k-1].
+        k = j
+        bs_total = 0
+        kill_triggers = []
+        while k < n and _is_delete_event(inputs[k][1]):
+            bs, kills = _count_deletes(inputs[k][1])
+            bs_total += bs
+            kill_triggers += kills
+            k += 1
+
+        qualifies = bs_total >= min_backspaces or bool(kill_triggers)
+        if qualifies:
+            # Start: walk back over the line being typed to the last boundary.
+            start_idx = j
+            b = j - 1
+            while b >= 0 and not _is_boundary_event(inputs[b][1]) \
+                    and not _is_delete_event(inputs[b][1]):
+                start_idx = b
+                b -= 1
+            start_s = inputs[start_idx][0]
+            # End: first recovery (real typing) keystroke after the deletes.
+            end_idx = None
+            for m in range(k, n):
+                if not _is_delete_event(inputs[m][1]) \
+                        and not _is_boundary_event(inputs[m][1]):
+                    end_idx = m
+                    break
+            end_s = inputs[end_idx][0] if end_idx is not None else inputs[k - 1][0]
+
+            triggers = []
+            if bs_total:
+                triggers.append("backspace")
+            triggers += kill_triggers
+            if end_s > start_s:
+                regions.append({
+                    "start_s": round(start_s, 4),
+                    "end_s": round(end_s, 4),
+                    "duration_s": round(end_s - start_s, 4),
+                    "kind": "fumble",
+                    "backspaces": bs_total,
+                    "triggers": sorted(set(triggers)),
+                })
+        j = k
+
+    # Merge overlapping / touching regions (multiple correction rounds on one
+    # line collapse into a single cut).
+    merged = []
+    for r in sorted(regions, key=lambda x: x["start_s"]):
+        if merged and r["start_s"] <= merged[-1]["end_s"]:
+            prev = merged[-1]
+            prev["end_s"] = max(prev["end_s"], r["end_s"])
+            prev["duration_s"] = round(prev["end_s"] - prev["start_s"], 4)
+            prev["backspaces"] += r["backspaces"]
+            prev["triggers"] = sorted(set(prev["triggers"]) | set(r["triggers"]))
+        else:
+            merged.append(dict(r))
+    return merged
+
+
 def total_duration(events):
     if not events:
         return 0.0
@@ -193,6 +307,9 @@ def main(argv):
                     help="Idle gap >= this many seconds becomes a speed-ramp candidate.")
     ap.add_argument("--idle-cut", type=float, default=8.0,
                     help="Idle gap >= this many seconds becomes a hard-cut candidate.")
+    ap.add_argument("--fumble-min-backspaces", type=int, default=3,
+                    help="A run of >= this many backspaces is a fumble candidate "
+                         "(Ctrl-U / Ctrl-W always trigger regardless of count).")
     args = ap.parse_args(argv)
 
     if not args.cast.is_file():
@@ -209,6 +326,7 @@ def main(argv):
 
     header, events = parse_cast(args.cast)
     gaps = find_idle_gaps(events, args.idle_speedramp, args.idle_cut)
+    fumbles = find_fumble_regions(events, min_backspaces=args.fumble_min_backspaces)
 
     render_with_agg(args.cast, gif_path, args.theme, args.font_size, args.fps)
     explode_to_pngs(gif_path, frames_dir)
@@ -232,6 +350,11 @@ def main(argv):
     for g in gaps:
         g["start_frame"] = cast_time_to_frame_index(g["start_s"], frame_times)
         g["end_frame"] = cast_time_to_frame_index(g["end_s"], frame_times)
+    # Same clock-collapse for fumble regions: attach PNG indices so the Remotion
+    # side reads frame indices, identical to how it cuts an idle_cut.
+    for f in fumbles:
+        f["start_frame"] = cast_time_to_frame_index(f["start_s"], frame_times)
+        f["end_frame"] = cast_time_to_frame_index(f["end_s"], frame_times)
 
     # Drift gauge: how far the GIF clock wandered from the cast clock.
     cast_dur = total_duration(events)
@@ -251,6 +374,7 @@ def main(argv):
         "frame_times_s": frame_times,
         "clock_drift_s": clock_drift_s,
         "idle_gaps": gaps,
+        "fumble_regions": fumbles,
         "events_summary": {"output_count": output_count, "input_count": input_count},
         "terminal": {
             "cols": header.get("width") or (header.get("term") or {}).get("cols"),
@@ -272,6 +396,8 @@ def main(argv):
     print(f"timing: {args.out_dir / 'timing.json'}")
     print(f"idle gaps: {len(gaps)} ({sum(1 for g in gaps if g['kind']=='cut')} cuts, "
           f"{sum(1 for g in gaps if g['kind']=='speedramp')} speed-ramps)")
+    print(f"fumble regions: {len(fumbles)} (cut candidates — surfaced for approval "
+          f"in the Phase 3 plan)")
     if drift_warn:
         print(
             f"WARNING: GIF clock drifted {clock_drift_s}s from the cast clock "

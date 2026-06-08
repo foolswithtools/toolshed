@@ -37,8 +37,45 @@ The plugin was hardened and the motion-primitives roadmap shipped (`screencast-c
 - [x] Slice A — ElevenLabs TTS (`Script:` input) → **0.9.0** — DONE on branch
   `expansion-slice-a` (committed, not pushed/merged; awaiting `/code-review` →
   push → PR → merge). See "Slice A — done" below.
-- [ ] Slice B — fumble / backspace + Ctrl-U/W detection → 0.10.0
+- [x] Slice B — fumble / backspace + Ctrl-U/W detection → **0.10.0** — DONE on
+  branch `expansion-slice-b` (committed, not pushed/merged; awaiting
+  `/code-review` → push → PR → merge). See "Slice B — done" below.
 - [ ] Slice C — screen-recording idle auto-trim → 0.11.0
+
+### Slice B — done (2026-06-08)
+
+Built on the existing harness (no parallel one):
+- **Detector:** `find_fumble_regions(events, min_backspaces=3)` added to
+  `scripts/cast_to_frames.py`, run alongside `find_idle_gaps`. Detects runs of
+  ≥`min_backspaces` backspaces (`\x7f`/`\x08`) **plus** Ctrl-U (`\x15`, kill-line)
+  and Ctrl-W (`\x17`, kill-word) as triggers regardless of count. Region spans
+  the mistyped line (anchored at the last Enter) through the first recovery
+  keystroke; overlapping rounds merge. Needs `i` (stdin) events — a cast without
+  them yields `[]` (graceful). Emits `fumble_regions` (start/end/duration_s,
+  `kind:"fumble"`, `backspaces`, `triggers`, + frame indices via the existing
+  `cast_time_to_frame_index` twin — no new TS math).
+- **Schema:** `timing.schema.json` gains an **optional** `fumble_regions` array
+  (optional so existing committed `timing.json` without it still validates).
+- **Config:** `fumble_min_backspaces` (3) + `fumble_auto_cut` (false). Theme
+  override via an `editing` block (added to the golden `default` profile,
+  precedence config < theme `editing` < prompt); CLI `--fumble-min-backspaces`.
+- **Treatment:** fumble regions are **cut candidates**, surfaced for per-region
+  approval in Phase 3 (not auto-cut; `fumble_auto_cut=false`); when approved,
+  dropped exactly like an `idle_cut` (IdleCutCard "…").
+- **Golden path:** `tests/fixtures/fumble.cast` (stdin-recorded, `ehco`→⌫⌫⌫⌫→
+  `echo hello`) + new `golden-fumble` composition that cuts the detected fumble
+  (cast 1.0→3.6s) — `verify_render.py` exits 0 (real render; filmstrip confirms
+  the typo is gone and the cut resumes on the corrected command).
+- **Tests:** 10 offline detector tests (backspace run, sub-threshold ignored,
+  packed/split backspaces, Ctrl-U, Ctrl-W, mixed triggers, no-input, anchor,
+  merge) + a full-pipeline `fumble_regions` assertion + `golden-fumble` e2e
+  render + fixture guard. `pytest plugins/screencast-cut` = **211 passed, 0
+  skips**; `test_repo_sync` + `test_timing_copies` green; `tsc --noEmit` clean;
+  guardrail + all JSON valid.
+- **Docs:** SKILL.md (Phase 3a fumble cut-candidate plan + AskUserQuestion per
+  region, config table, heuristics, `--fumble-min-backspaces`, version 0.10.0),
+  USAGE.md (record with `--stdin` to enable fumble detection; approved in
+  Phase 3), `plugin.json` + `marketplace.json` descriptions.
 
 ### Slice A — done (2026-06-08)
 

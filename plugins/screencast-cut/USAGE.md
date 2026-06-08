@@ -86,7 +86,7 @@ The skill consumes whatever produces a `.mp4`, `.mov`, or `.cast` — it doesn't
 
 - **Linux screen recording:** OBS Studio is the most common choice (X11 and Wayland), available in most distro repos. SimpleScreenRecorder, Kazam, or `wf-recorder` (Wayland) also work.
 - **macOS screen recording:** QuickTime is built-in and free. CleanShot X, OBS, or Screenize also work.
-- **Terminal recording (any OS):** `asciinema rec demo.cast`. Stop with `exit` or Ctrl-D.
+- **Terminal recording (any OS):** `asciinema rec demo.cast`. Stop with `exit` or Ctrl-D. Tip: record with stdin captured (`asciinema rec --stdin demo.cast`) and the skill can also detect **fumbles** — places where you backspaced through a typo (or hit Ctrl-U / Ctrl-W) and retyped — and offer to cut them. Long idle pauses get speed-ramped or cut automatically; fumbles are surfaced for your approval in the planning step (Phase 3), never cut silently by default.
 
 ### 2. Make sure your toolshed plugins are up to date
 

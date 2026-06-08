@@ -1,0 +1,56 @@
+{
+  "cast_version": 2,
+  "duration_s": 6.3,
+  "fps": 30,
+  "frame_count": 23,
+  "png_count": 23,
+  "frame_times_s": [
+    0.0,
+    0.5,
+    1.05,
+    1.35,
+    1.65,
+    1.95,
+    2.45,
+    2.65,
+    2.85,
+    3.05,
+    3.65,
+    3.85,
+    4.05,
+    4.25,
+    4.45,
+    4.65,
+    4.85,
+    5.05,
+    5.25,
+    5.45,
+    5.85,
+    6.0,
+    6.3
+  ],
+  "clock_drift_s": 0.0,
+  "idle_gaps": [],
+  "fumble_regions": [
+    {
+      "start_s": 1.0,
+      "end_s": 3.6,
+      "duration_s": 2.6,
+      "kind": "fumble",
+      "backspaces": 4,
+      "triggers": [
+        "backspace"
+      ],
+      "start_frame": 2,
+      "end_frame": 10
+    }
+  ],
+  "events_summary": {
+    "output_count": 22,
+    "input_count": 19
+  },
+  "terminal": {
+    "cols": 80,
+    "rows": 24
+  }
+}

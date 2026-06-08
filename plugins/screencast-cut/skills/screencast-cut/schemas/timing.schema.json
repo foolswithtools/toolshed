@@ -43,6 +43,28 @@
         }
       }
     },
+    "fumble_regions": {
+      "description": "Backspace/Ctrl-U/Ctrl-W fumble-and-retype stretches detected in the input stream. CUT CANDIDATES — surfaced for approval in Phase 3, never auto-cut unless fumble_auto_cut is set. Optional: casts recorded without stdin (no input events) omit or empty this.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_s", "end_s", "duration_s", "kind", "start_frame", "end_frame"],
+        "properties": {
+          "start_s": { "type": "number", "minimum": 0 },
+          "end_s": { "type": "number", "minimum": 0 },
+          "duration_s": { "type": "number", "minimum": 0 },
+          "kind": { "type": "string", "enum": ["fumble"] },
+          "backspaces": { "type": "integer", "minimum": 0 },
+          "triggers": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["backspace", "kill-line", "kill-word"] }
+          },
+          "start_frame": { "type": "integer", "minimum": 0 },
+          "end_frame": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
     "events_summary": {
       "type": "object",
       "additionalProperties": false,
