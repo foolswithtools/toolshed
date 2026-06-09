@@ -6,5 +6,6 @@
     "name": "foolswithtools",
     "email": "claudet@ohnobono.com"
   },
-  "homepage": "https://github.com/foolswithtools/toolshed"
+  "homepage": "https://github.com/foolswithtools/toolshed",
+  "license": "MIT"
 }
