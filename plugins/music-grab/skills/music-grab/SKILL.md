@@ -1,7 +1,7 @@
 ---
 name: music-grab
 description: Use this skill when the user wants to "grab a music track from this URL", "download the audio from this YouTube video", "save just the audio of this SoundCloud track", "pull this song into my project", or pastes a YouTube/SoundCloud/direct-MP3 URL and asks for the audio (typically to use as background music in a Remotion video). Downloads audio via yt-dlp, saves it under a target directory (default `./public/music/`), and appends a `CREDITS.md` entry with source URL, license claim from the page description, and any attribution requirements the page declared. Warns when the source page does not contain explicit "free to use" / Creative Commons language but still proceeds — the user is responsible for license compliance.
-version: 0.1.0
+version: 0.1.1
 ---
 
 # Music Grab

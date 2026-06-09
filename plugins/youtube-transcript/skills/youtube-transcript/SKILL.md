@@ -1,7 +1,7 @@
 ---
 name: youtube-transcript
 description: Use this skill whenever the user asks for a "youtube transcript", to "download subtitles from youtube", "get the transcript of <url>", "grab captions from youtube", "save subtitles for this video", or pastes a youtube.com / youtu.be URL and asks for its text. Downloads the .vtt subtitle file via yt-dlp and produces a cleaned .txt next to it. Apply even if the user does not say the word "transcript" explicitly — any request involving extracting the spoken content of a YouTube video qualifies.
-version: 0.1.0
+version: 0.1.1
 ---
 
 # YouTube Transcript Downloader

@@ -1,6 +1,6 @@
 {
   "name": "music-grab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Grab just the audio from a YouTube / SoundCloud / direct URL via yt-dlp, save it under your project's music folder, and append a CREDITS.md entry recording the source URL, license evidence found in the source page description, and any attribution requirements. Warn-and-proceed on missing license language — the user owns final license verification.",
   "author": {
     "name": "foolswithtools",
