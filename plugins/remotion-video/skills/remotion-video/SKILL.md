@@ -1,7 +1,7 @@
 ---
 name: remotion-video
 description: Use this skill when the user asks to "make a video", "create a motion graphics video", "build a launch video / intro / outro / explainer with Remotion", or describes a video they want generated from a prompt. Scaffolds (or reuses) a long-lived Remotion project, installs Remotion's official agent skills, plans the video beat-by-beat with the user, builds scenes with screenshot verification, iterates in the Studio preview, and renders to MP4. Maintains a persistent brand style guide so successive videos in the same project stay visually consistent.
-version: 0.7.2
+version: 0.8.0
 ---
 
 # Remotion Video Studio
@@ -62,6 +62,7 @@ The plugin ships multiple brand profiles under `${CLAUDE_PLUGIN_ROOT}/skills/rem
 
 - `default/` — neutral dark cinematic style. Always seeded.
 - `foolswithtools-brand/` — the master brand for the foolswithtools project: cream paper canvas, charcoal text, acid-green-led accent cycle, chunky 2px borders, Archivo Black wordmarks. Pulled from [`foolswith.tools`](https://foolswith.tools/) and [`foolswithtools/website`](https://github.com/foolswithtools/website). Ships eight components (`WordmarkHero`, `BentoTile`, `BrandedTile`, `TerminalChip`, `ScribbleUnderline`, `HalftoneOverlay`, `GummyButton`, `StickerAvatar`).
+- `paper-craft/` — an *aesthetic* profile (not a company identity): layered "cut construction paper" dioramas — soft stacked drop shadows, flat matte fills, a warm lantern glow, dusk-navy hills. Ships `LayeredParallaxScene` (camera push-in + depth-scaled parallax + per-layer idle sway) and `PaperPrimitives` (SVG stand-in layers). Its `BRAND.md` documents the generated-PNG-layer art pipeline: build motion against the SVG stand-ins, then swap each layer for a generated PNG via `SafeImg` — the rig is agnostic to what's inside a layer. Good for storybook/explainer scenes with an illustrated, handmade feel.
 
 **Deliberately not bundled:** profiles that mimic another company's published brand identity. Even when those identities are publicly documented, distributing a "use this style" template creates real risk that output videos get mistaken for official content from that company. Build your own profile by copying `default/` and customizing — that's the right way to make a video look the way you want.
 
@@ -70,6 +71,7 @@ In the Remotion project, profiles live at `<project>/src/brand/profiles/<name>/`
 **Detect profile selection** from the user's prompt at the start of every invocation:
 
 - "use the `foolswithtools-brand` profile" / "use foolswithtools-brand" / "foolswithtools style" → `foolswithtools-brand`
+- "paper-craft style" / "cut-paper" / "papercraft diorama" / "layered paper look" → `paper-craft`
 - "use the default profile" / no profile mentioned → `default`
 - Future profiles: match the directory name under `templates/`.
 
