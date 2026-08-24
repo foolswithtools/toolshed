@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Link check for the pdlc-define plugin.
 #
-# Proves that no reference in any skill or agent file points outside the
-# plugin root:
+# Proves that no reference in any skill, agent, or command file points
+# outside the plugin root:
 #   1. Every ${CLAUDE_PLUGIN_ROOT}/... path mentioned in skills/, agents/,
-#      prompts/, and README.md resolves to a file that ships in the plugin.
-#   2. No skill or agent file carries a bare relative reference to the old
-#      pattern-directory layout (prompts/... or agents/... outside a
+#      commands/, prompts/, and README.md resolves to a file that ships in
+#      the plugin.
+#   2. No skill, agent, or command file carries a bare relative reference to
+#      the old pattern-directory layout (prompts/... or agents/... outside a
 #      ${CLAUDE_PLUGIN_ROOT} prefix) or a parent-directory escape (../).
 #   3. Every markdown link target that looks like a local path exists under
 #      the plugin root.
@@ -18,7 +19,7 @@ plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 fail=0
 note() { echo "FINDING: $*"; fail=1; }
 
-files=$(find "$plugin_root/skills" "$plugin_root/agents" "$plugin_root/prompts" -name '*.md'; echo "$plugin_root/README.md")
+files=$(find "$plugin_root/skills" "$plugin_root/agents" "$plugin_root/commands" "$plugin_root/prompts" -name '*.md'; echo "$plugin_root/README.md")
 
 # 1. ${CLAUDE_PLUGIN_ROOT}/... references must resolve inside the plugin.
 while IFS=: read -r file ref; do
@@ -30,10 +31,11 @@ while IFS=: read -r file ref; do
   fi
 done < <(echo "$files" | xargs grep -o '\${CLAUDE_PLUGIN_ROOT}/[A-Za-z0-9_./-]*' /dev/null 2>/dev/null | sed 's/:\(.*\)/:\1/')
 
-# 2a. Bare relative references to the old layout in skills/ and agents/.
+# 2a. Bare relative references to the old layout in skills/, agents/, and
+#     commands/.
 while IFS= read -r hit; do
   note "bare relative reference (should be \${CLAUDE_PLUGIN_ROOT}-prefixed): $hit"
-done < <(find "$plugin_root/skills" "$plugin_root/agents" -name '*.md' \
+done < <(find "$plugin_root/skills" "$plugin_root/agents" "$plugin_root/commands" -name '*.md' \
   | xargs grep -n '`\(prompts\|agents\)/[A-Za-z0-9_.-]*`' /dev/null 2>/dev/null)
 
 # 2b. Parent-directory escapes anywhere in shipped markdown.
