@@ -21,8 +21,9 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `prompts/github-issue-template.md` | The issue-body skeleton (feature-slice, bug, and bootstrap genres) |
 | `prompts/pr-body-template.md` | The PR-body skeleton with evidence sections |
 | `scripts/lint-issue.mjs` | Dependency-free issue-body linter (with `scripts/schema.json`) |
+| `scripts/kickoff-preflight.mjs` | `/kickoff`'s mandatory preflight: runs the linter, then re-verifies every `Existing:` anchor's named symbol against current `main` |
 | `scripts/check-links.sh` | Repo-side check that no skill or agent references anything outside the plugin |
-| `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) |
+| `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) and the preflight's (`sh scripts/tests/run-kickoff-preflight-tests.sh`) |
 | `config/pattern-config.schema.json` | JSON Schema for the per-repo `.pattern-config.json` |
 | `config/pattern-config.example.json` | A valid example config; `/pattern-init` copies it into repos with no config |
 | `scripts/pattern-config.mjs` | Loader and validator for `.pattern-config.json` (module plus CLI) |
@@ -40,7 +41,7 @@ The complete operator surface for the lifecycle, one command per step:
 | `/derive-spec` | Fill the derive-spec goal prompt for specifying a new app by observing an existing one |
 | `/author-issues` | Fill the issue-authoring goal prompt that splits an accepted spec into self-contained GitHub issues |
 | `/lint-issue` | Run the issue-body linter standalone against a draft body; the verdict is the linter's exit code |
-| `/kickoff` | Produce a fresh-session kickoff prompt for one issue, constraints preamble first, stop condition built in |
+| `/kickoff` | Run the mandatory preflight (linter plus anchor-freshness check), then produce a fresh-session kickoff prompt for one issue, constraints preamble first, stop condition built in. A failed preflight refuses to start: no prompt, no worker |
 | `/branch-review` | Run the fresh-context whole-branch review of a branch or PR before merge |
 | `/closeout` | Walk the close-out checklist (follow-ups, docs, lessons) and fill a handoff prompt when work continues elsewhere |
 
@@ -95,6 +96,25 @@ The `bootstrap` genre covers issue zero of an empty repo, where there is no code
 Exit 0 when clean; exit 1 with a readable finding list otherwise. It requires only `node`, no dependencies. The schema is data (`scripts/schema.json`); point `--config` at a copy to adapt section names, title grammar, or banned phrases to your repo. The linter's own suite lives at `scripts/tests/run-tests.sh`; it must pass before any linter or schema change ships.
 
 When the repo root carries a `.pattern-config.json` (or `--pattern-config` points at one), the linter also enforces it: spec anchors must live under the configured `spec_dir`, and when partitions are declared the test plan section must name one of them. An invalid config file is a usage error (exit 2), not an issue finding.
+
+## Kickoff preflight
+
+Staleness accrues between issue authoring and execution: `file:line` anchors rot as `main` moves, and an under-specified issue burns a full worker session before anyone notices. `/kickoff` runs a preflight before it produces a kickoff prompt at all, host-side (anchors are unreachable from inside agent containers, so the check has to run where the checkout lives).
+
+The preflight is `scripts/kickoff-preflight.mjs`, invoked over the fetched issue body:
+
+```
+node ${CLAUDE_PLUGIN_ROOT}/scripts/kickoff-preflight.mjs body.md --genre feature --repo /path/to/repo
+```
+
+It runs in two layers:
+
+1. It invokes `scripts/lint-issue.mjs` unmodified as a subprocess (the mechanical linter, not reimplemented) and folds its findings in verbatim: missing sections, bad title grammar, an `Existing:` anchor whose file is gone, a line number past end of file.
+2. It adds a check the linter does not do. When an `Existing:` anchor names its symbol in a second backtick span, the plugin's own convention (see `prompts/github-issue-template.md`, "Existing prior art to fold in: `` `<path:line>` `<functionName>` ``"), the preflight greps the anchor's target file for that symbol within 20 lines either side of the anchor line. A line count still in range does not mean the code at that line is still what the issue describes; a line-length check alone cannot see a symbol that moved elsewhere in the same file. A miss here is reported as `ANCHOR_SYMBOL_DRIFT`.
+
+Exit 0 prints `PREFLIGHT PASS` plus, for every anchor it could re-verify, a freshness line (the symbol confirmed present, and the anchor file's last-touched date from `git log` when the checkout is a git repo). Exit nonzero prints `PREFLIGHT REFUSED` and the combined finding list; `/kickoff` refuses to start on a failed preflight, posts the finding list as a GitHub issue comment when the issue is on GitHub (prints it for local issue files), and never produces a kickoff prompt. A refused kickoff starts no worker; the fix is to fix the issue body, not the prompt.
+
+The preflight's own self-test suite lives at `scripts/tests/run-kickoff-preflight-tests.sh` (fixtures under `scripts/tests/kickoff-preflight/`), proving three outcomes: a clean body passes with anchor freshness reported, a body with a rotted anchor is refused by the symbol-freshness check, and a body missing a required section is refused by the wrapped linter.
 
 ## Provenance and honesty notes
 
