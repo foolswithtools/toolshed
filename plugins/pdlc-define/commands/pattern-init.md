@@ -5,7 +5,7 @@ argument-hint: <target-repo-root>
 
 # /pattern-init
 
-Initialize a repo for the factory-goal-prompts pattern.
+Initialize a repo for the pdlc-define pattern.
 
 ## Guard: approved repos only
 

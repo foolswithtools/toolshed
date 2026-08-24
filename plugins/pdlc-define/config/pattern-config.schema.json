@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/foolswithtools/toolshed/blob/main/plugins/factory-goal-prompts/config/pattern-config.schema.json",
+  "$id": "https://github.com/foolswithtools/toolshed/blob/main/plugins/pdlc-define/config/pattern-config.schema.json",
   "title": ".pattern-config.json",
-  "description": "Per-repo configuration for the factory-goal-prompts pattern. Lives at the consumer repo root as .pattern-config.json. One schema, two consumers: the plugin's skills and commands read it for paths, partitions, gate commands, and labels; the issue linter (scripts/lint-issue.mjs) reads it for partition and spec-path validation. All paths are relative to the repo root; no leading slash, no '..' segments.",
+  "description": "Per-repo configuration for the pdlc-define pattern. Lives at the consumer repo root as .pattern-config.json. One schema, two consumers: the plugin's skills and commands read it for paths, partitions, gate commands, and labels; the issue linter (scripts/lint-issue.mjs) reads it for partition and spec-path validation. All paths are relative to the repo root; no leading slash, no '..' segments.",
   "type": "object",
   "required": ["version", "spec_dir"],
   "additionalProperties": false,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Link check for the factory-goal-prompts plugin.
+# Link check for the pdlc-define plugin.
 #
 # Proves that no reference in any skill or agent file points outside the
 # plugin root:

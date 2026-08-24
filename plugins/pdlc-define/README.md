@@ -1,4 +1,4 @@
-# factory-goal-prompts
+# pdlc-define
 
 Goal-prompt driven development for Claude Code: every unit of work gets a written, self-contained spec that a fresh agent with zero context can execute. The discipline works on any project, but it is built for factory projects (the pattern plus the factory pipeline). Extracted from a five-month production project (2026): hundreds of merged PRs, none abandoned, every one driven by a written spec.
 
@@ -50,7 +50,7 @@ The four prompt-filling commands (`/research-spec`, `/derive-spec`, `/author-iss
 
 ```
 /plugin marketplace add https://github.com/foolswithtools/toolshed.git
-/plugin install factory-goal-prompts@toolshed
+/plugin install pdlc-define@toolshed
 ```
 
 The skills load on demand; the agents register as subagents. Prompt templates resolve from `${CLAUDE_PLUGIN_ROOT}/prompts/`.
