@@ -246,6 +246,33 @@ if (genre.testPlanSection) {
   }
 }
 
+// 7b. Bootstrap discipline: the shippable-main definition is the FIRST
+// acceptance criterion. On an empty repo "main stays shippable" has no
+// inherited meaning, so the issue itself must define it up front.
+if (genre.requireShippableMainFirst && genre.acceptanceSection) {
+  const heading = findHeading(genre.acceptanceSection);
+  if (heading) {
+    const text = sectionText(heading);
+    const shippableRe = new RegExp(schema.shippableMainPattern, "m");
+    if (!shippableRe.test(text)) {
+      err(
+        "SHIPPABLE_MAIN_MISSING",
+        `"## ${heading}" must open with a "Shippable main:" criterion defining what shippable means for this repo`
+      );
+    } else {
+      const firstBullet = text
+        .split(/\r?\n/)
+        .find((l) => /^\s*[-*]\s+\S/.test(l));
+      if (firstBullet && !shippableRe.test(firstBullet)) {
+        err(
+          "SHIPPABLE_MAIN_NOT_FIRST",
+          `the "Shippable main:" criterion must be the first bullet of "## ${heading}"`
+        );
+      }
+    }
+  }
+}
+
 // 8. Relative-date words anywhere in the body.
 for (const w of schema.relativeDateWords) {
   const re = new RegExp(`\\b${w.replace(/ /g, "\\s+")}\\b`, "i");

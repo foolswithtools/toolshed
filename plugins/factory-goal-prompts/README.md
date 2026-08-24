@@ -17,10 +17,11 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `prompts/02-issue-authoring-goal-prompt.md` | Template: split an accepted spec into GitHub issues (no code) |
 | `prompts/03-implementation-kickoff-prompt.md` | Template: kick off execution of an issue in a fresh session |
 | `prompts/04-handoff-goal-prompt.md` | Template: hand work to a zero-context successor session or repo |
-| `prompts/github-issue-template.md` | The issue-body skeleton (feature-slice and bug genres) |
+| `prompts/github-issue-template.md` | The issue-body skeleton (feature-slice, bug, and bootstrap genres) |
 | `prompts/pr-body-template.md` | The PR-body skeleton with evidence sections |
 | `scripts/lint-issue.mjs` | Dependency-free issue-body linter (with `scripts/schema.json`) |
 | `scripts/check-links.sh` | Repo-side check that no skill or agent references anything outside the plugin |
+| `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) |
 
 ## Install
 
@@ -43,7 +44,9 @@ Work flows through a fixed lifecycle: a research goal prompt produces a decision
 node ${CLAUDE_PLUGIN_ROOT}/scripts/lint-issue.mjs body.md --genre feature --repo /path/to/repo
 ```
 
-Exit 0 when clean; exit 1 with a readable finding list otherwise. It requires only `node`, no dependencies. The schema is data (`scripts/schema.json`); point `--config` at a copy to adapt section names, title grammar, or banned phrases to your repo.
+The `bootstrap` genre covers issue zero of an empty repo, where there is no code to anchor into: all-`New:` integration points are legal (no `file:line` anchor required, at least one `New:` path mandatory), and the first acceptance criterion must be a `Shippable main:` bullet defining what shippable means for that repo before anything exists. See Genre 3 in `prompts/github-issue-template.md`.
+
+Exit 0 when clean; exit 1 with a readable finding list otherwise. It requires only `node`, no dependencies. The schema is data (`scripts/schema.json`); point `--config` at a copy to adapt section names, title grammar, or banned phrases to your repo. The linter's own suite lives at `scripts/tests/run-tests.sh`; it must pass before any linter or schema change ships.
 
 ## Provenance and honesty notes
 

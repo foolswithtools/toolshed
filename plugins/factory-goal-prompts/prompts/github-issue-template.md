@@ -1,6 +1,6 @@
 # GitHub Issue Body Template
 
-Two genres share one backbone. The bar for both: **a cold implementer who has read nothing but this body (and what it links) can deliver the slice.** Zero one-liner issues - if the body is under ~500 characters, it isn't an issue yet.
+Three genres share one backbone. The bar for both: **a cold implementer who has read nothing but this body (and what it links) can deliver the slice.** Zero one-liner issues - if the body is under ~500 characters, it isn't an issue yet.
 
 Titles use conventional-commit style: `feat(scope): …` / `fix(scope): …` / `infra(scope): …` - concrete deliverable or symptom, lowercase prose.
 
@@ -75,6 +75,71 @@ resolved-issues doc entry.>
 
 ## Out of scope / Related
 <…>
+```
+
+## Genre 3 - Bootstrap (issue zero of an empty repo)
+
+The pattern demands every issue leave main shippable, but an empty repo has no main
+to keep shippable and no code to anchor into. The bootstrap genre is how a repo gets
+its first issue: it defines what shippable means before anything exists, and every
+integration point is a `New:` path because there is no prior art. Same section
+backbone as Genre 1, with these deltas:
+
+- **Scope names the full scaffold inventory.** Project skeleton, test harness, CI or
+  gate commands, `CLAUDE.md` with its constraints section, settings deny rules, and
+  factory workdir files where applicable. Nothing else - the follow-on slices each
+  stay independently green on top of this floor.
+- **The shippable-main definition is the FIRST acceptance criterion**, as a bullet
+  starting `Shippable main:`. The linter rejects a bootstrap body without it (or
+  with it buried below another criterion). Example for a mobile app: "Shippable
+  main: a clean checkout builds, launches to a stub screen, and the suite is green."
+- **Integration points carry only `New:` paths plus wire contracts.** There is no
+  `Existing:` code to anchor into; `file:line` anchors are not required (and cannot
+  exist). Give the wire contract each later slice consumes verbatim.
+- **The test plan names the harness's own first test** - the smoke test that proves
+  the suite runs at all. That test is the deliverable that makes "suite green" a
+  falsifiable statement from the first merge.
+
+```markdown
+Part of <program> - spec: `<spec-dir>/<date>-<name>.md` (§refs). Tracker: #<NNN>.
+
+## Why this slice
+<Why the repo exists now and what the follow-on slices need from the floor this
+creates. One paragraph.>
+
+## Scope
+- <Project scaffold: the buildable skeleton, by tool and target>
+- <Test harness wired with one passing smoke test so the suite is runnable>
+- <CI or gate commands: the exact commands that define green>
+- <CLAUDE.md with the constraints section; settings deny rules; factory workdir
+  files where applicable>
+
+## Integration points
+- New: `<path/Entry.ext>` (entry point; wire contract each later slice consumes,
+  given VERBATIM)
+- New: `<tests/Smoke.ext>` (the harness's first test)
+- New: `<ci-or-gate config path>`
+
+## Test plan (write these first)
+- `<tests/Smoke.ext>` - <the harness's own first test: builds, launches to the
+  stub, constructs without throwing. The suite's first green test.>
+
+## Acceptance criteria
+- Shippable main: <what shippable means for THIS repo from the first merge, e.g.
+  "a clean checkout builds, the app launches to a stub screen, and the suite is
+  green", stated falsifiably>
+- <Further observable criteria: gate commands exit 0 on a clean checkout, etc.>
+
+## Out of scope
+- <Any real feature; those are the numbered slices after this one, WITH numbers
+  where they exist>
+
+## Blocked by
+- <#NNN / [NNN] or "none"; typically the repo-creation decision>
+
+## Docs (definition of done)
+- <README quick-start: how to build and run the suite; anything the constraints
+  section promises>
 ```
 
 ---
