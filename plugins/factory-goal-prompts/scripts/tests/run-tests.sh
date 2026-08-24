@@ -94,6 +94,37 @@ assert_eq 1 $? "shippable-main-not-first fixture exits 1"
 assert_contains SHIPPABLE_MAIN_NOT_FIRST "$out"
 rm -f "$tmp5"
 
+# 11. Pattern config: the same passing feature body passes against a repo whose
+#     .pattern-config.json declares its spec_dir and partition (fakerepo-config).
+crepo="$here/fakerepo-config"
+node "$lint" "$here/pass-feature.md" --genre feature --repo "$crepo" >/dev/null 2>&1
+assert_eq 0 $? "pass-feature exits 0 against the config repo"
+
+# 12. Pattern config: a spec anchor outside the configured spec_dir fails with
+#     SPEC_OUTSIDE_SPEC_DIR (the target file exists, isolating the new check).
+tmp6="$here/.tmp-spec-outside.md"
+node -e "const fs=require('fs');const src=fs.readFileSync('$here/pass-feature.md','utf8');fs.writeFileSync('$tmp6',src.replace('docs/specs/2026-08-24-sample.md','notes/other.md'))"
+out=$(node "$lint" "$tmp6" --genre feature --repo "$crepo" 2>&1)
+assert_eq 1 $? "spec-outside-spec-dir fixture exits 1"
+assert_contains SPEC_OUTSIDE_SPEC_DIR "$out"
+rm -f "$tmp6"
+
+# 13. Pattern config: a test plan naming none of the declared partitions fails
+#     with PARTITION_UNDECLARED.
+tmp7="$here/.tmp-partition.md"
+node -e "const fs=require('fs');const src=fs.readFileSync('$here/pass-feature.md','utf8');fs.writeFileSync('$tmp7',src.replace('Partition: core-coverage','Partition: nightly'))"
+out=$(node "$lint" "$tmp7" --genre feature --repo "$crepo" 2>&1)
+assert_eq 1 $? "undeclared-partition fixture exits 1"
+assert_contains PARTITION_UNDECLARED "$out"
+rm -f "$tmp7"
+
+# 14. An invalid pattern config is a usage error (exit 2), not an issue finding.
+tmp8="$here/.tmp-bad-config.json"
+printf '{"version":2,"spec_dir":"/abs"}' > "$tmp8"
+node "$lint" "$here/pass-feature.md" --genre feature --repo "$repo" --pattern-config "$tmp8" >/dev/null 2>&1
+assert_eq 2 $? "invalid pattern config exits 2"
+rm -f "$tmp8"
+
 echo ""
 if [ "$fails" -eq 0 ]; then
   echo "SELF-TEST PASS"

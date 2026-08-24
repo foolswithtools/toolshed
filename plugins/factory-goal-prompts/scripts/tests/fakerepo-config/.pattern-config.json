@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "spec_dir": "docs/specs",
+  "partitions": [
+    { "name": "core-coverage", "description": "The default suite for the fake repo." }
+  ]
+}

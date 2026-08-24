@@ -6,6 +6,7 @@
 //   node lint-issue.mjs <body-file> [--genre feature|bug|bootstrap|decision]
 //                       [--title "feat(scope): ..."] [--repo <root>]
 //                       [--plan-root <root>] [--config <schema.json>]
+//                       [--pattern-config <.pattern-config.json>]
 //
 // The body file may carry its title as a first line of the form
 // "Title: feat(scope): ..." and an optional "Genre: <name>" line right after,
@@ -14,11 +15,15 @@
 // the body file containing a plan/ directory) or --repo. Planned: `path`
 // markers are informational anchors into artifacts outside both roots; they
 // satisfy anchor presence but get no existence check.
+// When the repo root (--repo, else the plan root) carries a .pattern-config.json,
+// or --pattern-config points at one, its partitions and spec_dir are enforced
+// too (see pattern-config.mjs; schema in ../config/pattern-config.schema.json).
 // Exit 0 when clean, exit 1 with a readable finding list otherwise.
 
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadPatternConfig, CONFIG_FILENAME } from "./pattern-config.mjs";
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -26,7 +31,7 @@ function parseArgs(argv) {
     const a = argv[i];
     if (
       a === "--genre" || a === "--title" || a === "--repo" ||
-      a === "--config" || a === "--plan-root"
+      a === "--config" || a === "--plan-root" || a === "--pattern-config"
     ) {
       args[a.slice(2)] = argv[++i];
     } else if (a === "--help" || a === "-h") {
@@ -42,7 +47,8 @@ const args = parseArgs(process.argv.slice(2));
 if (args.help || args._.length !== 1) {
   console.log(
     "usage: lint-issue.mjs <body-file> [--genre feature|bug|bootstrap|decision] " +
-      '[--title "..."] [--repo <root>] [--plan-root <root>] [--config <schema.json>]'
+      '[--title "..."] [--repo <root>] [--plan-root <root>] [--config <schema.json>] ' +
+      "[--pattern-config <.pattern-config.json>]"
   );
   process.exit(args.help ? 0 : 2);
 }
@@ -87,6 +93,28 @@ if (!planRoot) {
     const up = dirname(d);
     if (up === d) break;
     d = up;
+  }
+}
+
+// Per-repo pattern config: explicit --pattern-config path, else discovered at
+// the --repo root, else at the plan root. Invalid file = usage error (exit 2):
+// a broken config should be fixed, not silently ignored or blamed on the issue.
+let patternConfig = null;
+{
+  const explicit = args["pattern-config"] ? resolve(args["pattern-config"]) : null;
+  const discoveryRoot = args.repo ? resolve(args.repo) : planRoot;
+  const target = explicit || (discoveryRoot ? join(discoveryRoot, CONFIG_FILENAME) : null);
+  if (target && existsSync(target)) {
+    const loaded = loadPatternConfig(target);
+    if (loaded.findings.length > 0) {
+      console.error(`invalid pattern config ${loaded.path}:`);
+      for (const f of loaded.findings) console.error(`  ERROR: ${f}`);
+      process.exit(2);
+    }
+    patternConfig = loaded.config;
+  } else if (explicit) {
+    console.error(`pattern config not found: ${explicit}`);
+    process.exit(2);
   }
 }
 
@@ -161,6 +189,7 @@ const findHeading = (want) =>
 }
 
 // 5. Spec anchor in the preamble (before the first heading).
+let specAnchorPath = null;
 if (genre.requireSpecAnchor) {
   const pre = sections.__preamble.join("\n");
   const m = pre.match(new RegExp(schema.specAnchorPattern));
@@ -168,6 +197,7 @@ if (genre.requireSpecAnchor) {
     err("SPEC_ANCHOR_MISSING", "no spec anchor line (expected: spec: `<path>` before the first section)");
   } else if (args.repo || planRoot) {
     const specPath = m[1].split("#")[0];
+    specAnchorPath = specPath;
     const roots = [planRoot, args.repo ? resolve(args.repo) : null].filter(Boolean);
     if (!roots.some((r) => existsSync(join(r, specPath)))) {
       err(
@@ -303,6 +333,35 @@ if (genre.blockedBySection) {
       err(
         "BLOCKED_BY_EMPTY",
         `"## ${heading}" must list issue refs (#N or local [NNN]) or say "none"`
+      );
+    }
+  }
+}
+
+// 11. Pattern config: spec anchors must live under the declared spec_dir.
+if (patternConfig && specAnchorPath) {
+  const specDir = patternConfig.spec_dir.replace(/\/+$/, "");
+  if (specAnchorPath !== specDir && !specAnchorPath.startsWith(specDir + "/")) {
+    err(
+      "SPEC_OUTSIDE_SPEC_DIR",
+      `spec anchor "${specAnchorPath}" is outside the configured spec_dir "${specDir}/" (${CONFIG_FILENAME})`
+    );
+  }
+}
+
+// 12. Pattern config: the test plan must name a declared coverage partition.
+if (patternConfig && patternConfig.partitions.length > 0 && genre.testPlanSection) {
+  const heading = findHeading(genre.testPlanSection);
+  if (heading) {
+    const text = sectionText(heading);
+    const names = patternConfig.partitions.map((p) => p.name);
+    const named = names.some((n) =>
+      new RegExp(`(^|[^a-z0-9-])${n}([^a-z0-9-]|$)`, "mi").test(text)
+    );
+    if (!named) {
+      err(
+        "PARTITION_UNDECLARED",
+        `"## ${heading}" names none of the partitions declared in ${CONFIG_FILENAME}: ${names.join(", ")}`
       );
     }
   }
