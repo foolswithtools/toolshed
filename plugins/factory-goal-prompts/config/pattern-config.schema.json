@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/foolswithtools/toolshed/blob/main/plugins/factory-goal-prompts/config/pattern-config.schema.json",
+  "title": ".pattern-config.json",
+  "description": "Per-repo configuration for the factory-goal-prompts pattern. Lives at the consumer repo root as .pattern-config.json. One schema, two consumers: the plugin's skills and commands read it for paths, partitions, gate commands, and labels; the issue linter (scripts/lint-issue.mjs) reads it for partition and spec-path validation. All paths are relative to the repo root; no leading slash, no '..' segments.",
+  "type": "object",
+  "required": ["version", "spec_dir"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Config format version. Always 1 for now; consumers reject anything else."
+    },
+    "spec_dir": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/]",
+      "description": "Directory holding dated spec files (YYYY-MM-DD-topic.md). Template default: docs/specs. The linter requires spec anchors to resolve under this directory when the config file is present."
+    },
+    "known_issues_dir": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/]",
+      "description": "Directory holding known-issue and resolved-bug write-ups. Template default: docs/known-issues."
+    },
+    "roadmap_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/]",
+      "description": "Path to the roadmap file whose status markers are updated at close-out. Template default: docs/ROADMAP.md."
+    },
+    "partitions": {
+      "type": "array",
+      "description": "Coverage partitions / test suites that can own a test plan. When non-empty, the linter requires each issue's test plan section to name one of them.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "Partition name as it appears on a 'Partition/suite:' line (lowercase, digits, hyphens)."
+          },
+          "description": {
+            "type": "string",
+            "description": "What the partition covers and when it runs."
+          }
+        }
+      }
+    },
+    "gate_commands": {
+      "type": "array",
+      "description": "Commands that must be green before a PR merges; kickoff and close-out surfaces cite them by name.",
+      "items": {
+        "type": "object",
+        "required": ["name", "run"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short gate name, e.g. test, lint, build."
+          },
+          "run": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The shell command to run from the repo root."
+          }
+        }
+      }
+    },
+    "labels": {
+      "type": "array",
+      "description": "The issue label set this repo uses; issue authoring picks labels from this list.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

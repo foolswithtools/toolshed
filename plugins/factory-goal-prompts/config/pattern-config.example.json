@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "spec_dir": "docs/specs",
+  "known_issues_dir": "docs/known-issues",
+  "roadmap_path": "docs/ROADMAP.md",
+  "partitions": [
+    {
+      "name": "unit",
+      "description": "Fast, dependency-free tests; run on every PR."
+    },
+    {
+      "name": "integration",
+      "description": "Tests that touch a real boundary (network, disk, subprocess)."
+    }
+  ],
+  "gate_commands": [
+    {
+      "name": "test",
+      "run": "npm test"
+    },
+    {
+      "name": "lint",
+      "run": "npm run lint"
+    }
+  ],
+  "labels": ["feature", "bug", "infra", "docs"]
+}

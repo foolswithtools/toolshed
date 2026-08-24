@@ -23,6 +23,11 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `scripts/lint-issue.mjs` | Dependency-free issue-body linter (with `scripts/schema.json`) |
 | `scripts/check-links.sh` | Repo-side check that no skill or agent references anything outside the plugin |
 | `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) |
+| `config/pattern-config.schema.json` | JSON Schema for the per-repo `.pattern-config.json` |
+| `config/pattern-config.example.json` | A valid example config; `/pattern-init` copies it into repos with no config |
+| `scripts/pattern-config.mjs` | Loader and validator for `.pattern-config.json` (module plus CLI) |
+| `scripts/pattern-init.sh` | Idempotent scaffolder behind the `/pattern-init` command |
+| `commands/pattern-init.md` | `/pattern-init <repo>`: scaffold the pattern structure in an approved repo |
 
 ## Install
 
@@ -37,6 +42,29 @@ The skills load on demand; the agents register as subagents. Prompt templates re
 
 Work flows through a fixed lifecycle: a research goal prompt produces a decision-ready spec in the repo; open decisions are resolved with the owner and recorded; an issue-authoring goal prompt splits the spec into self-contained, PR-able GitHub issues before any code; each issue is executed in a fresh session under TDD with subagent slices; a fresh-context whole-branch review guards the merge; the human holds the merge gate; close-out extracts lessons, syncs docs, and, when work continues elsewhere, writes a handoff goal prompt for the next zero-context agent. Transcripts are disposable; the repo is the memory.
 
+## Per-repo configuration: `.pattern-config.json`
+
+The pattern's paths and names vary per repo (the source project kept specs in one directory, the templates default to another). A consumer repo declares its own conventions in a `.pattern-config.json` at the repo root; skills, commands, and the linter read it when present, fall back to the template defaults when absent, and say which source they used. Scaffold it with `/pattern-init <repo-root>` (idempotent; a second run is a no-op). The machine-readable contract is `config/pattern-config.schema.json`; a valid example is `config/pattern-config.example.json`.
+
+| Field | Type | Required | Default | Read by |
+|---|---|---|---|---|
+| `version` | const `1` | yes | - | all consumers (anything else is rejected) |
+| `spec_dir` | relative path | yes | `docs/specs` | research/authoring surfaces; linter (spec anchors must resolve under it) |
+| `known_issues_dir` | relative path | no | `docs/known-issues` | close-out surfaces; `/pattern-init` |
+| `roadmap_path` | relative path | no | `docs/ROADMAP.md` | close-out surfaces; `/pattern-init` |
+| `partitions` | array of `{name, description?}` | no | `[]` | issue authoring; linter (a test plan must name a declared partition) |
+| `gate_commands` | array of `{name, run}` | no | `[]` | kickoff and merge-gate surfaces; `/pattern-init` docs |
+| `labels` | array of strings | no | `[]` | issue authoring (labels come from this list) |
+
+Paths are repo-relative: no leading slash, no `..` segments. Unknown keys are rejected so typos fail loudly. Validate by hand with:
+
+```
+node ${CLAUDE_PLUGIN_ROOT}/scripts/pattern-config.mjs validate --repo /path/to/repo
+node ${CLAUDE_PLUGIN_ROOT}/scripts/pattern-config.mjs show --repo /path/to/repo
+```
+
+`validate` exits 0 on a valid file (or no file, meaning defaults apply) and 1 with findings otherwise; `show` prints the effective config with a `source` field (`file` or `defaults`).
+
 ## The linter
 
 `scripts/lint-issue.mjs` mechanically checks an issue body before it is filed: required sections in order, conventional-commit title grammar, minimum body size, spec anchor present, `file:line` anchors resolve against a checkout, test plan names real test paths or a `Verify:` line, absolute dates only, banned vague acceptance phrases, blocked-by discipline. Four genres: `feature`, `bug`, `bootstrap`, `decision`.
@@ -48,6 +76,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/lint-issue.mjs body.md --genre feature --repo
 The `bootstrap` genre covers issue zero of an empty repo, where there is no code to anchor into: all-`New:` integration points are legal (no `file:line` anchor required, at least one `New:` path mandatory), and the first acceptance criterion must be a `Shippable main:` bullet defining what shippable means for that repo before anything exists. See Genre 3 in `prompts/github-issue-template.md`.
 
 Exit 0 when clean; exit 1 with a readable finding list otherwise. It requires only `node`, no dependencies. The schema is data (`scripts/schema.json`); point `--config` at a copy to adapt section names, title grammar, or banned phrases to your repo. The linter's own suite lives at `scripts/tests/run-tests.sh`; it must pass before any linter or schema change ships.
+
+When the repo root carries a `.pattern-config.json` (or `--pattern-config` points at one), the linter also enforces it: spec anchors must live under the configured `spec_dir`, and when partitions are declared the test plan section must name one of them. An invalid config file is a usage error (exit 2), not an issue finding.
 
 ## Provenance and honesty notes
 

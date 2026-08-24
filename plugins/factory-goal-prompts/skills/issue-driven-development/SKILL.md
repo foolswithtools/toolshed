@@ -9,6 +9,10 @@ description: Use when starting any unit of project work - a feature, bug fix, or
 
 **No unit of work without a written, self-contained spec - and the spec's home is a GitHub issue.** A fresh agent with zero context must be able to deliver the work from the issue body alone. Session transcripts are disposable; the repo (issues, specs, docs) is the memory.
 
+## Per-repo configuration
+
+Before resolving any repo convention (spec directory, known-issues home, roadmap path, coverage partitions, gate commands, issue labels), check the repo root for `.pattern-config.json`. When present it is authoritative; when absent use the template defaults (`docs/specs/`, `docs/known-issues/`, `docs/ROADMAP.md`). Either way, state which source you used, e.g. "using .pattern-config.json" or "no .pattern-config.json; template defaults". Schema and example: `${CLAUDE_PLUGIN_ROOT}/config/`. Scaffold a repo with the `/pattern-init` command; the linter reads the same file.
+
 ## The lifecycle
 
 1. **Research** (if the design is open): goal prompt → decision-ready spec in the repo's spec directory (dated, e.g. `docs/specs/<date>-<topic>.md`; use whatever spec home the repo already has, never hard-code one) with comparison matrix, `file:line` integration points, phased plan, and explicit open questions. Template: `${CLAUDE_PLUGIN_ROOT}/prompts/01-research-goal-prompt.md`.

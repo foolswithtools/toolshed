@@ -10,7 +10,7 @@ You decompose an accepted design spec into GitHub issues that a zero-context imp
 
 - The spec path (a dated file in the repo's spec directory, e.g. `docs/specs/<date>-<topic>.md`; the directory varies per repo) and which sections are authoritative.
 - Any amendments decided after the spec (fold them in first, as dated in-place amendments).
-- The label(s) to apply and the repo's coverage-partition / test-suite map.
+- The label(s) to apply and the repo's coverage-partition / test-suite map. If the repo root has a `.pattern-config.json`, take spec_dir, partitions, and labels from it (and say so); otherwise use the template defaults and say that instead.
 
 ## Rules
 
