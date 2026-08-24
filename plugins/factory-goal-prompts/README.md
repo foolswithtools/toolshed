@@ -28,6 +28,23 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `scripts/pattern-config.mjs` | Loader and validator for `.pattern-config.json` (module plus CLI) |
 | `scripts/pattern-init.sh` | Idempotent scaffolder behind the `/pattern-init` command |
 | `commands/pattern-init.md` | `/pattern-init <repo>`: scaffold the pattern structure in an approved repo |
+| `commands/` | The seven lifecycle slash commands (table below) |
+
+## Commands
+
+The complete operator surface for the lifecycle, one command per step:
+
+| Command | Job |
+|---|---|
+| `/research-spec` | Fill the research goal prompt into a fresh-session brief that produces a decision-ready spec |
+| `/derive-spec` | Fill the derive-spec goal prompt for specifying a new app by observing an existing one |
+| `/author-issues` | Fill the issue-authoring goal prompt that splits an accepted spec into self-contained GitHub issues |
+| `/lint-issue` | Run the issue-body linter standalone against a draft body; the verdict is the linter's exit code |
+| `/kickoff` | Produce a fresh-session kickoff prompt for one issue, constraints preamble first, stop condition built in |
+| `/branch-review` | Run the fresh-context whole-branch review of a branch or PR before merge |
+| `/closeout` | Walk the close-out checklist (follow-ups, docs, lessons) and fill a handoff prompt when work continues elsewhere |
+
+The four prompt-filling commands (`/research-spec`, `/derive-spec`, `/author-issues`, `/kickoff`) output a completed goal prompt for the operator to review and paste into a fresh session; unfillable slots surface as `PROPOSED - confirm:` items, never silent guesses. The other three act directly. `/derive-spec` needs the `prompts/00-derive-spec-goal-prompt.md` template, which ships separately; the command reports plainly if the installed plugin version lacks it.
 
 ## Install
 
