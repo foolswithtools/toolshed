@@ -27,6 +27,7 @@
   "fileAnchorPattern": "([A-Za-z0-9_@./-]+\\.[A-Za-z0-9]+):(\\d+)",
   "testPathPattern": "(^|[\\s`(-])([\\w./-]*tests?/[\\w./-]+\\.[A-Za-z0-9]+|[\\w./-]*(\\.test\\.|\\.spec\\.|_test\\.|Tests\\.swift)[\\w./-]*|[\\w./-]+\\.rs\\b)",
   "issueRefPattern": "(#\\d+|[\\w.-]+/[\\w.-]+#\\d+|\\[\\d{3}\\])",
+  "shippableMainPattern": "^\\s*[-*]\\s*Shippable main:",
   "genres": {
     "feature": {
       "requiredSections": [
@@ -76,6 +77,7 @@
       "requireSpecAnchor": true,
       "requireFileLineAnchor": false,
       "requireNewPath": true,
+      "requireShippableMainFirst": true,
       "acceptanceSection": "Acceptance criteria",
       "testPlanSection": "Test plan (write these first)",
       "blockedBySection": "Blocked by"
