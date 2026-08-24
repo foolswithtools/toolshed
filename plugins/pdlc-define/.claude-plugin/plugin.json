@@ -1,5 +1,5 @@
 {
-  "name": "factory-goal-prompts",
+  "name": "pdlc-define",
   "version": "0.1.0",
   "description": "Goal-prompt driven development: skills, agents, and prompt templates for writing specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter.",
   "author": {

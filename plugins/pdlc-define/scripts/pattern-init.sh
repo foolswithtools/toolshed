@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scaffold the factory-goal-prompts pattern structure in a target repo.
+# Scaffold the pdlc-define pattern structure in a target repo.
 # Idempotent: a second run on an initialized repo is a no-op.
 #
 # Usage: pattern-init.sh <target-repo-root>
@@ -73,7 +73,7 @@ else
   changes=$((changes + 1))
 fi
 
-MARKER="<!-- factory-goal-prompts: documentation hygiene -->"
+MARKER="<!-- pdlc-define: documentation hygiene -->"
 CLAUDE_MD="$TARGET/CLAUDE.md"
 if [ -f "$CLAUDE_MD" ] && grep -qF "$MARKER" "$CLAUDE_MD"; then
   echo "exists   CLAUDE.md documentation-hygiene section"
@@ -81,7 +81,7 @@ else
   [ -f "$CLAUDE_MD" ] && printf '\n' >> "$CLAUDE_MD"
   cat >> "$CLAUDE_MD" <<EOF
 $MARKER
-## Documentation hygiene (factory-goal-prompts)
+## Documentation hygiene (pdlc-define)
 
 - Specs are dated files under \`$SPEC_DIR/\` (YYYY-MM-DD-topic.md); every unit of work anchors to one.
 - Known-issue and resolved-bug write-ups live under \`$KNOWN_ISSUES_DIR/\`; every fixed bug gets an entry plus a named regression test.
