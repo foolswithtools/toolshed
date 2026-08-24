@@ -4,7 +4,7 @@ Use this when the spec's source of truth is not your own repo but a **different,
 
 ---
 
-Derive a decision-ready spec for <the target app: platform and one-line mission> by observing <the observed app: name, how to run it, where its code lives>. Do NOT implement anything. The observed codebase is **strictly read-only reference material**: never edit, commit, push, or open issues or PRs there.
+Derive a decision-ready spec for <the target app: one-line mission, and the platform named precisely - "iOS/SwiftUI", not "mobile"; the affordances section is only as concrete as this slot> by observing <the observed app: name, how to run it, where its code lives>. Do NOT implement anything. The observed codebase is **strictly read-only reference material**: never edit, commit, push, or open issues or PRs there.
 
 ## Source of truth (in this order)
 
@@ -28,7 +28,7 @@ Write the spec to the target repo's spec directory as a dated file (e.g. `docs/s
 6. **Fidelity decision** - job-to-be-done versus clone, recorded as an explicit spec decision with rationale. Every later scope call traces back to this line.
 7. **Feature-parity matrix** - every observed feature marked `clone` / `adapt` / `not-cloned`, with an honest rationale for every `not-cloned` row - future readers must see why NOT, not just what made it.
 8. **Open questions** - numbered, in their own section, each with a recommended default. These get resolved with the owner and recorded back as decisions; never silently pick for the owner.
-9. **Contract tests emitted from the transcribed shapes** - runnable test files in the target repo asserting the transcribed request/response shapes, as the spec's own verification hook: when the target implementation exists, these tests fail if it drifts from the observed contract.
+9. **Contract tests emitted from the transcribed shapes** - runnable test files in the target repo asserting the transcribed request/response shapes, as the spec's own verification hook: when the target implementation exists, these tests fail if it drifts from the observed contract. Use the target repo's test stack (<name it here>); if the repo is bare greenfield, pick one and record the pick as a spec decision - the asserted shapes come from captures, only the harness is yours to choose.
 
 ## Anchor policy (greenfield)
 
