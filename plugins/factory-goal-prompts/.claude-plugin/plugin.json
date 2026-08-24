@@ -1,0 +1,11 @@
+{
+  "name": "factory-goal-prompts",
+  "version": "0.1.0",
+  "description": "Goal-prompt driven development: skills, agents, and prompt templates for writing specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter.",
+  "author": {
+    "name": "foolswithtools",
+    "email": "claudet@ohnobono.com"
+  },
+  "homepage": "https://github.com/foolswithtools/toolshed",
+  "license": "MIT"
+}

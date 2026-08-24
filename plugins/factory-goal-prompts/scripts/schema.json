@@ -1,0 +1,98 @@
+{
+  "minBodyChars": 500,
+  "titlePattern": "^(feat|fix|infra|test|docs|chore|decision)\\(([a-z0-9-]+)\\): [A-Za-z0-9`]",
+  "bannedCharacters": [
+    { "char": "—", "name": "em dash" },
+    { "char": "–", "name": "en dash" }
+  ],
+  "relativeDateWords": [
+    "yesterday",
+    "tomorrow",
+    "last week",
+    "next week",
+    "last month",
+    "next month",
+    "a few days ago",
+    "the other day"
+  ],
+  "bannedAcceptancePhrases": [
+    "works correctly",
+    "as expected",
+    "handle properly",
+    "handles properly",
+    "works as intended",
+    "functions properly"
+  ],
+  "specAnchorPattern": "spec: `([^`]+)`",
+  "fileAnchorPattern": "([A-Za-z0-9_@./-]+\\.[A-Za-z0-9]+):(\\d+)",
+  "testPathPattern": "(^|[\\s`(-])([\\w./-]*tests?/[\\w./-]+\\.[A-Za-z0-9]+|[\\w./-]*(\\.test\\.|\\.spec\\.|_test\\.|Tests\\.swift)[\\w./-]*|[\\w./-]+\\.rs\\b)",
+  "issueRefPattern": "(#\\d+|[\\w.-]+/[\\w.-]+#\\d+|\\[\\d{3}\\])",
+  "genres": {
+    "feature": {
+      "requiredSections": [
+        "Why this slice",
+        "Scope",
+        "Integration points",
+        "Test plan (write these first)",
+        "Acceptance criteria",
+        "Out of scope",
+        "Blocked by",
+        "Docs"
+      ],
+      "requireSpecAnchor": true,
+      "requireFileLineAnchor": true,
+      "requireNewPath": false,
+      "acceptanceSection": "Acceptance criteria",
+      "testPlanSection": "Test plan (write these first)",
+      "blockedBySection": "Blocked by"
+    },
+    "bug": {
+      "requiredSections": [
+        "Problem",
+        "Root cause / Detail",
+        "Impact",
+        "Fix options",
+        "Test plan (write these first)",
+        "Out of scope / Related"
+      ],
+      "requireSpecAnchor": false,
+      "requireFileLineAnchor": true,
+      "requireNewPath": false,
+      "acceptanceSection": null,
+      "testPlanSection": "Test plan (write these first)",
+      "blockedBySection": null
+    },
+    "bootstrap": {
+      "requiredSections": [
+        "Why this slice",
+        "Scope",
+        "Integration points",
+        "Test plan (write these first)",
+        "Acceptance criteria",
+        "Out of scope",
+        "Blocked by",
+        "Docs"
+      ],
+      "requireSpecAnchor": true,
+      "requireFileLineAnchor": false,
+      "requireNewPath": true,
+      "acceptanceSection": "Acceptance criteria",
+      "testPlanSection": "Test plan (write these first)",
+      "blockedBySection": "Blocked by"
+    },
+    "decision": {
+      "requiredSections": [
+        "Decision needed",
+        "Context",
+        "Recommendation",
+        "What unblocks"
+      ],
+      "requireSpecAnchor": true,
+      "requireFileLineAnchor": false,
+      "requireNewPath": false,
+      "acceptanceSection": null,
+      "testPlanSection": null,
+      "blockedBySection": "Blocked by"
+    }
+  }
+}
