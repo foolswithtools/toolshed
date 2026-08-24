@@ -13,6 +13,7 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `agents/issue-author.md` | Turns an accepted spec into self-contained, PR-able GitHub issues plus a tracker DAG |
 | `agents/slice-implementer.md` | Executes exactly one TDD slice under a fixed wire contract and allowed-files list |
 | `agents/branch-reviewer.md` | Whole-branch, cross-task-wiring review before merge |
+| `prompts/00-derive-spec-goal-prompt.md` | Template: derive a decision-ready spec by observing an existing app (greenfield) |
 | `prompts/01-research-goal-prompt.md` | Template: research phase producing a decision-ready spec |
 | `prompts/02-issue-authoring-goal-prompt.md` | Template: split an accepted spec into GitHub issues (no code) |
 | `prompts/03-implementation-kickoff-prompt.md` | Template: kick off execution of an issue in a fresh session |
