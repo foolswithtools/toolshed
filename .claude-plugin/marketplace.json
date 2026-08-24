@@ -27,6 +27,11 @@
       "name": "music-grab",
       "source": "./plugins/music-grab",
       "description": "Grab just the audio from a YouTube / SoundCloud / direct URL via yt-dlp, save it under your project's music folder, and append a CREDITS.md entry recording the source URL, license evidence found in the source page description, and any attribution requirements. Warn-and-proceed on missing license language — the user owns final license verification."
+    },
+    {
+      "name": "subreddit-grab",
+      "source": "./plugins/subreddit-grab",
+      "description": "Download a subreddit's posts and comments as JSONL. Walks the arctic-shift archive by default (no auth, no pip deps, no live-Reddit ~1000-item cap) for full history or a --after/--before date range; falls back to live Reddit's public .json for by-score 'top'/'hot' grabs; and reads local Academic-Torrents per-subreddit .zst dumps (decompressed via the zstd CLI with --long=31) for subreddits too large to walk over the API. Captures posts + selftext + metadata and full comment streams, writes posts.jsonl / comments.jsonl / _manifest.json under output_root, and records archive-coverage caveats so you know what the data is and isn't."
     }
   ]
 }
