@@ -19,7 +19,7 @@ Split the accepted <program name> architecture into GitHub issues that maximize 
 
 ## Issue-splitting rules
 
-- **Unit of work = one PR-able slice: 0.5–3 days, independently green.** Every issue must leave `main` shippable. If a phase can't be split without a dead-code intermediate state, prefer a slice that ships the seam + a fake implementation first.
+- **Unit of work = one PR-able slice: 0.5-3 days, independently green.** Every issue must leave `main` shippable. If a phase can't be split without a dead-code intermediate state, prefer a slice that ships the seam + a fake implementation first.
 - **TDD is the structure of the issue, not a checkbox.** Each issue body must contain a "Test plan (write these first)" section naming the exact test files and the coverage partition/suite that owns them.
 - **Every issue carries its own context.** Assume the implementer has NOT read this conversation: why-this-slice, verified `file:line` anchors, verbatim interfaces for anything new, acceptance criteria as observable behavior, explicit out-of-scope. Use the skeleton in `${CLAUDE_PLUGIN_ROOT}/prompts/github-issue-template.md`.
 - **Context that serves multiple issues belongs in the repo** (docs/, CLAUDE.md), not pasted into every body - add those repo files as part of this task and link them.

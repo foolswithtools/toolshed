@@ -32,6 +32,11 @@
       "name": "subreddit-grab",
       "source": "./plugins/subreddit-grab",
       "description": "Download a subreddit's posts and comments as JSONL. Walks the arctic-shift archive by default (no auth, no pip deps, no live-Reddit ~1000-item cap) for full history or a --after/--before date range; falls back to live Reddit's public .json for by-score 'top'/'hot' grabs; and reads local Academic-Torrents per-subreddit .zst dumps (decompressed via the zstd CLI with --long=31) for subreddits too large to walk over the API. Captures posts + selftext + metadata and full comment streams, writes posts.jsonl / comments.jsonl / _manifest.json under output_root, and records archive-coverage caveats so you know what the data is and isn't."
+    },
+    {
+      "name": "pdlc-define",
+      "source": "./plugins/pdlc-define",
+      "description": "Goal-prompt driven development: skills, agents, and prompt templates for writing specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter."
     }
   ]
 }
