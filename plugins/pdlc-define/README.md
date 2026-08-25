@@ -7,6 +7,7 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | Path | What it is |
 |---|---|
 | `skills/issue-driven-development/` | The full lifecycle as an executable process: research, decide, author issues, kick off, execute, review, merge, close out |
+| `skills/issue-driven-development/examples/` | Two fully worked, synthetic example issues (invented codebase, fictional product) showing the Genre 1 anatomy end to end; both lint clean |
 | `skills/writing-goal-prompts/` | Authoring goal prompts a cold agent can execute without asking what you meant |
 | `skills/whole-branch-review/` | The fresh-context merge safety net that catches cross-task wiring defects green suites miss |
 | `skills/context-layering/` | Where context lives (issues vs repo docs vs agent memory) and the lesson loop |
@@ -23,6 +24,7 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `scripts/lint-issue.mjs` | Dependency-free issue-body linter (with `scripts/schema.json`) |
 | `scripts/kickoff-preflight.mjs` | `/kickoff`'s mandatory preflight: runs the linter, then re-verifies every `Existing:` anchor's named symbol against current `main` |
 | `scripts/check-links.sh` | Repo-side check that no skill or agent references anything outside the plugin |
+| `scripts/check-public-hygiene.sh` | Deny-list sweep proving no file under the plugin tree contains a banned string; the deny list is supplied at run time from outside this repo, never committed |
 | `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) and the preflight's (`sh scripts/tests/run-kickoff-preflight-tests.sh`) |
 | `config/pattern-config.schema.json` | JSON Schema for the per-repo `.pattern-config.json` |
 | `config/pattern-config.example.json` | A valid example config; `/pattern-init` copies it into repos with no config |
@@ -115,6 +117,44 @@ It runs in two layers:
 Exit 0 prints `PREFLIGHT PASS` plus, for every anchor it could re-verify, a freshness line (the symbol confirmed present, and the anchor file's last-touched date from `git log` when the checkout is a git repo). Exit nonzero prints `PREFLIGHT REFUSED` and the combined finding list; `/kickoff` refuses to start on a failed preflight, posts the finding list as a GitHub issue comment when the issue is on GitHub (prints it for local issue files), and never produces a kickoff prompt. A refused kickoff starts no worker; the fix is to fix the issue body, not the prompt.
 
 The preflight's own self-test suite lives at `scripts/tests/run-kickoff-preflight-tests.sh` (fixtures under `scripts/tests/kickoff-preflight/`), proving three outcomes: a clean body passes with anchor freshness reported, a body with a rotted anchor is refused by the symbol-freshness check, and a body missing a required section is refused by the wrapped linter.
+
+## Public-hygiene sweep
+
+toolshed is a public repo. `scripts/check-public-hygiene.sh` proves that no
+file under this plugin's tree contains a banned string (a private project
+name, a client or company reference, a private repo slug, anything
+owner-identifying beyond the public author block). The deny list itself is
+never committed here: the script takes it as an external file, so the
+banned names are not part of this repo's history either.
+
+```
+PDLC_DEFINE_HYGIENE_DENYLIST=/path/to/denylist.env \
+  bash scripts/check-public-hygiene.sh
+```
+
+Exit 0 on zero hits; exit 1 with a `FINDING:` list otherwise; exit 2 on a
+usage error (no deny list supplied, or the file is missing).
+
+## The pdlc family
+
+`pdlc-define` is the first plugin in a planned `pdlc-*` family, one plugin
+per phase of the product development lifecycle. Coverage today, and the
+names reserved for the phases not yet built:
+
+| # | Phase | Status |
+|---|---|---|
+| 1 | Discover | Reserved: `pdlc-discover` |
+| 2 | Define | Covered by `pdlc-define`: goal prompts through a decision-ready spec |
+| 3 | Design | Reserved: `pdlc-design` |
+| 4 | Plan | Covered by `pdlc-define`: spec to self-contained issues, plus the linter |
+| 5 | Build | Reserved: `pdlc-build` |
+| 6 | Verify | Covered by `pdlc-define`: TDD discipline in the issue body, whole-branch review |
+| 7 | Release | Reserved: `pdlc-release` |
+| 8 | Operate | Reserved: `pdlc-operate` |
+| 9 | Feedback | Reserved: `pdlc-feedback` |
+
+Reserved names mark a spot for a future plugin; none of them ship code
+today, and none of the above is a timeline commitment.
 
 ## Provenance and honesty notes
 

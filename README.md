@@ -91,6 +91,40 @@ The first invocation in a folder scaffolds a long-lived Remotion project under `
 
 The persistent brand style guide lives in `<project>/src/brand/profiles/<name>/` and is selected by `<project>/src/brand/active.ts`. The skill seeds the `default` profile on first run, plus any additional profile you ask for (e.g. `foolswithtools-brand`, the project's own pop-art / punk-zine maker-blog brand pulled from [`foolswith.tools`](https://foolswith.tools/)). Switch profiles per video by saying "use the `<name>` profile". Build your own profile by copying any of the bundled ones and customizing.
 
+### pdlc-define
+
+Goal-prompt driven development for Claude Code: skills, agents, and prompt templates for writing decision-ready specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter. Every unit of work gets a written spec before any code.
+
+**Use it:**
+
+```
+/plugin install pdlc-define@toolshed
+```
+
+```
+/research-spec
+/author-issues
+/kickoff
+```
+
+The seven lifecycle commands (`/research-spec`, `/derive-spec`, `/author-issues`, `/lint-issue`, `/kickoff`, `/branch-review`, `/closeout`) cover research through close-out. Full command reference and the per-repo `.pattern-config.json` layer: [`plugins/pdlc-define/README.md`](plugins/pdlc-define/README.md).
+
+`pdlc-define` is the first plugin in a planned `pdlc-*` family, one plugin per phase of the product development lifecycle:
+
+| # | Phase | Status |
+|---|---|---|
+| 1 | Discover | Reserved: `pdlc-discover` |
+| 2 | Define | Covered by `pdlc-define` |
+| 3 | Design | Reserved: `pdlc-design` |
+| 4 | Plan | Covered by `pdlc-define` |
+| 5 | Build | Reserved: `pdlc-build` |
+| 6 | Verify | Covered by `pdlc-define` |
+| 7 | Release | Reserved: `pdlc-release` |
+| 8 | Operate | Reserved: `pdlc-operate` |
+| 9 | Feedback | Reserved: `pdlc-feedback` |
+
+Reserved names mark a spot for a future plugin; none of them ship code today.
+
 ## Layout
 
 ```
