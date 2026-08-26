@@ -1,6 +1,6 @@
 {
   "name": "pdlc-define",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Goal-prompt driven development: skills and prompt templates for writing specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter. pi package wrapper around the same shared core the Claude Code plugin uses.",
   "keywords": [
     "pi-package"
