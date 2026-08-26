@@ -1,6 +1,8 @@
 # pdlc-define
 
-Goal-prompt driven development for Claude Code: every unit of work gets a written, self-contained spec that a fresh agent with zero context can execute. The discipline works on any project, but it is built for factory projects (the pattern plus the factory pipeline). Extracted from a five-month production project (2026): hundreds of merged PRs, none abandoned, every one driven by a written spec.
+Goal-prompt driven development: every unit of work gets a written, self-contained spec that a fresh agent with zero context can execute. The discipline works on any project, but it is built for factory projects (the pattern plus the factory pipeline). Extracted from a five-month production project (2026): hundreds of merged PRs, none abandoned, every one driven by a written spec.
+
+Two harnesses, one shared core: the skills, prompt templates, and linter under this directory are the only copy. The Claude Code plugin (`.claude-plugin/plugin.json`, `agents/`, `commands/`) and the pi package (`package.json`'s `pi` key) both point at the same `skills/` and `prompts/` directories; neither harness gets a duplicated copy.
 
 ## What it ships
 
@@ -25,7 +27,9 @@ Goal-prompt driven development for Claude Code: every unit of work gets a writte
 | `scripts/kickoff-preflight.mjs` | `/kickoff`'s mandatory preflight: runs the linter, then re-verifies every `Existing:` anchor's named symbol against current `main` |
 | `scripts/check-links.sh` | Repo-side check that no skill or agent references anything outside the plugin |
 | `scripts/check-public-hygiene.sh` | Deny-list sweep proving no file under the plugin tree contains a banned string; the deny list is supplied at run time from outside this repo, never committed |
-| `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`) and the preflight's (`sh scripts/tests/run-kickoff-preflight-tests.sh`) |
+| `scripts/check-no-pi-duplication.sh` | Proves the pi manifest points at the shared `skills/` and `prompts/` directories and that no file elsewhere in the tree duplicates their content |
+| `package.json` | The pi package manifest: `pi.skills` and `pi.prompts` reference `./skills` and `./prompts` directly, no copy |
+| `scripts/tests/` | The linter's self-test suite (`sh scripts/tests/run-tests.sh`), the preflight's (`sh scripts/tests/run-kickoff-preflight-tests.sh`), and the pi package smoke test (`sh scripts/tests/run-pi-smoke-tests.sh`) |
 | `config/pattern-config.schema.json` | JSON Schema for the per-repo `.pattern-config.json` |
 | `config/pattern-config.example.json` | A valid example config; `/pattern-init` copies it into repos with no config |
 | `scripts/pattern-config.mjs` | Loader and validator for `.pattern-config.json` (module plus CLI) |
@@ -134,6 +138,37 @@ PDLC_DEFINE_HYGIENE_DENYLIST=/path/to/denylist.env \
 
 Exit 0 on zero hits; exit 1 with a `FINDING:` list otherwise; exit 2 on a
 usage error (no deny list supplied, or the file is missing).
+
+## pi package
+
+pi is the pattern's second harness: the factory's default backend, and the client team's daily driver, so the same skills, prompt templates, and linter install with one pi command. `package.json` carries the pi manifest (the `pi` key), pointing at the shared `skills/` and `prompts/` directories this plugin already ships; nothing is copied for pi.
+
+```json
+{
+  "pi": {
+    "skills": ["./skills"],
+    "prompts": ["./prompts"]
+  }
+}
+```
+
+Install (verified against pi 0.84.2):
+
+```
+pi install /path/to/toolshed/plugins/pdlc-define
+```
+
+This is the narrowest form pi 0.84.2 supports for a plugin nested inside a larger repo. pi's `git:` source has no subpath syntax: `git:github.com/foolswithtools/toolshed/plugins/pdlc-define` parses as a (nonexistent) repository path, not a package root inside a repository. So `pi install git:github.com/foolswithtools/toolshed` installs the whole toolshed checkout and finds zero skills or prompts there (this plugin's resources are nested, and toolshed's repo root carries no pi manifest of its own by design: it hosts several unrelated plugins). Clone first, then install the subdirectory as a local path, as above.
+
+Add `-l` to install project-locally instead of to user settings; see pi's [`docs/packages.md`](https://pi.dev) for scope and update semantics.
+
+The linter is not a pi resource type (skills/prompts/extensions/themes); pi does not need to know about it. Run it from the installed package path directly:
+
+```
+node /path/to/toolshed/plugins/pdlc-define/scripts/lint-issue.mjs body.md --genre feature --repo /path/to/repo
+```
+
+`scripts/tests/run-pi-smoke-tests.sh` is the smoke test: it installs the package into an isolated, throwaway pi settings scope (never `~/.pi/agent`), confirms pi's own resolver discovers all skills and prompt templates, runs the linter against a fixture body, and runs `check-no-pi-duplication.sh`. It makes no model call and needs no provider key; it skips (exit 0) if `pi` is not on `PATH`.
 
 ## The pdlc family
 

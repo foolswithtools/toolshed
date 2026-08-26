@@ -101,6 +101,14 @@ Goal-prompt driven development for Claude Code: skills, agents, and prompt templ
 /plugin install pdlc-define@toolshed
 ```
 
+The skills, prompt templates, and linter are also installable as a pi package, since pi is the second harness the pattern targets. Clone this repo, then point pi at the plugin directory (the narrowest install pi 0.84.2 supports; `pi install`'s `git:` source has no subpath, so a whole-repo git install won't discover a plugin nested in a subdirectory):
+
+```
+pi install /path/to/toolshed/plugins/pdlc-define
+```
+
+See [`plugins/pdlc-define/README.md`](plugins/pdlc-define/README.md#pi-package) for the manifest, the linter invocation, and the smoke test.
+
 ```
 /research-spec
 /author-issues
