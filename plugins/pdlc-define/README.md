@@ -21,6 +21,7 @@ Two harnesses, one shared core: the skills, prompt templates, and linter under t
 | `prompts/02-issue-authoring-goal-prompt.md` | Template: split an accepted spec into GitHub issues (no code) |
 | `prompts/03-implementation-kickoff-prompt.md` | Template: kick off execution of an issue in a fresh session |
 | `prompts/04-handoff-goal-prompt.md` | Template: hand work to a zero-context successor session or repo |
+| `prompts/05-refine-spec-facilitation.md` | The refine-spec facilitation protocol: the three-layer facilitated session both harnesses run (the `/refine-spec` command loads it; the pi package exposes it as a prompt) |
 | `prompts/github-issue-template.md` | The issue-body skeleton (feature-slice, bug, and bootstrap genres) |
 | `prompts/pr-body-template.md` | The PR-body skeleton with evidence sections |
 | `scripts/lint-issue.mjs` | Dependency-free issue-body linter (with `scripts/schema.json`) |
@@ -35,7 +36,9 @@ Two harnesses, one shared core: the skills, prompt templates, and linter under t
 | `scripts/pattern-config.mjs` | Loader and validator for `.pattern-config.json` (module plus CLI) |
 | `scripts/pattern-init.sh` | Idempotent scaffolder behind the `/pattern-init` command |
 | `commands/pattern-init.md` | `/pattern-init <repo>`: scaffold the pattern structure in an approved repo |
-| `commands/` | The seven lifecycle slash commands (table below) |
+| `commands/refine-spec.md` | `/refine-spec <doc>`: facilitate an interactive spec-refinement session before issue authoring; loads the shared facilitation protocol under `prompts/` |
+| `commands/` | The eight lifecycle slash commands (table below) |
+| `scripts/tests/refine-spec-smoke/` | The refine-spec cold-session smoke: fixture, checks, driver, and a recorded transcript (drives `claude`, skips without it) |
 
 ## Commands
 
@@ -45,13 +48,14 @@ The complete operator surface for the lifecycle, one command per step:
 |---|---|
 | `/research-spec` | Fill the research goal prompt into a fresh-session brief that produces a decision-ready spec |
 | `/derive-spec` | Fill the derive-spec goal prompt for specifying a new app by observing an existing one |
+| `/refine-spec` | Facilitate an interactive spec-refinement session that settles a draft spec's stances with its owner before issue authoring |
 | `/author-issues` | Fill the issue-authoring goal prompt that splits an accepted spec into self-contained GitHub issues |
 | `/lint-issue` | Run the issue-body linter standalone against a draft body; the verdict is the linter's exit code |
 | `/kickoff` | Run the mandatory preflight (linter plus anchor-freshness check), then produce a fresh-session kickoff prompt for one issue, constraints preamble first, stop condition built in. A failed preflight refuses to start: no prompt, no worker |
 | `/branch-review` | Run the fresh-context whole-branch review of a branch or PR before merge |
 | `/closeout` | Walk the close-out checklist (follow-ups, docs, lessons) and fill a handoff prompt when work continues elsewhere |
 
-The four prompt-filling commands (`/research-spec`, `/derive-spec`, `/author-issues`, `/kickoff`) output a completed goal prompt for the operator to review and paste into a fresh session; unfillable slots surface as `PROPOSED - confirm:` items, never silent guesses. The other three act directly. `/derive-spec` needs the `prompts/00-derive-spec-goal-prompt.md` template, which ships separately; the command reports plainly if the installed plugin version lacks it.
+The four prompt-filling commands (`/research-spec`, `/derive-spec`, `/author-issues`, `/kickoff`) output a completed goal prompt for the operator to review and paste into a fresh session; unfillable slots surface as `PROPOSED - confirm:` items, never silent guesses. The other four (`/lint-issue`, `/refine-spec`, `/branch-review`, `/closeout`) act directly. `/refine-spec` runs the facilitated refinement session in place, loading its protocol from `prompts/05-refine-spec-facilitation.md`. `/derive-spec` needs the `prompts/00-derive-spec-goal-prompt.md` template, which ships separately; the command reports plainly if the installed plugin version lacks it.
 
 ## Install
 
@@ -64,7 +68,7 @@ The skills load on demand; the agents register as subagents. Prompt templates re
 
 ## The pattern in one paragraph
 
-Work flows through a fixed lifecycle: a research goal prompt produces a decision-ready spec in the repo; open decisions are resolved with the owner and recorded; an issue-authoring goal prompt splits the spec into self-contained, PR-able GitHub issues before any code; each issue is executed in a fresh session under TDD with subagent slices; a fresh-context whole-branch review guards the merge; the human holds the merge gate; close-out extracts lessons, syncs docs, and, when work continues elsewhere, writes a handoff goal prompt for the next zero-context agent. Transcripts are disposable; the repo is the memory.
+Work flows through a fixed lifecycle: a research goal prompt produces a decision-ready spec in the repo; the spec is refined with its owner in a facilitated session, where its stances are restated, challenged, and edited by explicit agreement until it is ready to stamp; open decisions are resolved with the owner and recorded; an issue-authoring goal prompt splits the spec into self-contained, PR-able GitHub issues before any code; each issue is executed in a fresh session under TDD with subagent slices; a fresh-context whole-branch review guards the merge; the human holds the merge gate; close-out extracts lessons, syncs docs, and, when work continues elsewhere, writes a handoff goal prompt for the next zero-context agent. Transcripts are disposable; the repo is the memory.
 
 ## Per-repo configuration: `.pattern-config.json`
 
