@@ -42,6 +42,25 @@ line_of() {
   grep -niE "$1" "$transcript" 2>/dev/null | head -1 | cut -d: -f1
 }
 
+# --- Plugin load: turn 1 must actually run the command, not fall through to
+#     a plain chat session ---
+turn1_start="$(grep -n '^===== HUMAN TURN 1 =====' "$transcript" | head -1 | cut -d: -f1)"
+turn2_start="$(grep -n '^===== HUMAN TURN 2 =====' "$transcript" | head -1 | cut -d: -f1)"
+if [ -n "$turn1_start" ]; then
+  if [ -n "$turn2_start" ]; then
+    turn1_slice="$(sed -n "${turn1_start},$((turn2_start - 1))p" "$transcript")"
+  else
+    turn1_slice="$(sed -n "${turn1_start},\$p" "$transcript")"
+  fi
+  if echo "$turn1_slice" | grep -qiE 'Unknown command'; then
+    fail "turn 1 printed 'Unknown command': the plugin did not load (check --plugin-dir resolution)"
+  else
+    pass "turn 1 did not print 'Unknown command' (the plugin loaded and the command ran)"
+  fi
+else
+  fail "could not locate the HUMAN TURN 1 marker to check for a plugin-load failure"
+fi
+
 # --- Layer 1: facilitator restates before challenging ---
 if grep -qiE '(^|[^a-z])RESTATE:' "$transcript"; then
   pass "facilitator emitted a RESTATE of the human position"
