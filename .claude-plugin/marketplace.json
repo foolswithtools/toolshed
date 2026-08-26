@@ -37,6 +37,11 @@
       "name": "pdlc-define",
       "source": "./plugins/pdlc-define",
       "description": "Goal-prompt driven development: skills, agents, and prompt templates for writing specs, self-contained GitHub issues, and handoffs that a zero-context agent can execute, plus a dependency-free issue-body linter."
+    },
+    {
+      "name": "pdlc-build",
+      "source": "./plugins/pdlc-build",
+      "description": "The build-phase companion to a running factory: hand a GitHub issue to factory as a run, read a run's verdict honestly without collapsing its two scores, triage an escalation into a fixed issue, and check credits before and after. Four operator commands, dual-harness (Claude Code and pi) from one shared core."
     }
   ]
 }

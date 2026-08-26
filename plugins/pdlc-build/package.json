@@ -1,0 +1,22 @@
+{
+  "name": "pdlc-build",
+  "version": "0.1.0",
+  "description": "The build-phase companion to a running factory: submit a GitHub issue as a run, read a run's verdict honestly, triage an escalation, and check credits before and after. pi package wrapper around the same shared core the Claude Code plugin uses.",
+  "keywords": [
+    "pi-package"
+  ],
+  "author": {
+    "name": "foolswithtools",
+    "email": "claudet@ohnobono.com"
+  },
+  "homepage": "https://github.com/foolswithtools/toolshed",
+  "license": "MIT",
+  "pi": {
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ]
+  }
+}

@@ -125,13 +125,46 @@ The seven lifecycle commands (`/research-spec`, `/derive-spec`, `/author-issues`
 | 2 | Define | Covered by `pdlc-define` |
 | 3 | Design | Reserved: `pdlc-design` |
 | 4 | Plan | Covered by `pdlc-define` |
-| 5 | Build | Reserved: `pdlc-build` |
+| 5 | Build | Covered by `pdlc-build` |
 | 6 | Verify | Covered by `pdlc-define` |
 | 7 | Release | Reserved: `pdlc-release` |
 | 8 | Operate | Reserved: `pdlc-operate` |
 | 9 | Feedback | Reserved: `pdlc-feedback` |
 
 Reserved names mark a spot for a future plugin; none of them ship code today.
+
+### pdlc-build
+
+The build-phase companion to a running factory. Where `pdlc-define` owns the issue
+discipline (valuable with or without a factory), `pdlc-build` owns the actions a
+person takes against a factory that has landed work for real: four operator
+commands, one job each.
+
+**Use it:**
+
+```
+/plugin install pdlc-build@toolshed
+```
+
+| Command | Job |
+|---|---|
+| `/submit-run` | Fetch a GitHub issue, write it as a factory work item under a real work-item id, start the run, report the run id |
+| `/run-status` | Read the run's verdict and present the two scores and the two confidence legs without collapsing them |
+| `/escalation-triage` | Walk an escalated run's reasons and produce a corrected issue body (that lints clean) or a documented retry decision |
+| `/budget-check` | Read credits before and after a metered run and append a row to a ledger you supply |
+
+One line: `pdlc-define` defines the work; `pdlc-build` runs it through the factory
+and reads what came back.
+
+Like `pdlc-define`, the skill and the four action procedures install as a pi
+package too, since pi is the second harness the pattern targets:
+
+```
+pi install /path/to/toolshed/plugins/pdlc-build
+```
+
+Full command reference, the live-run prerequisites, and the honest verdict-reading
+guide: [`plugins/pdlc-build/README.md`](plugins/pdlc-build/README.md).
 
 ## Layout
 
