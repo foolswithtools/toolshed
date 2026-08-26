@@ -42,11 +42,33 @@ command's contract from the transcript and the resulting working tree:
   `DISPATCH` announcement into its `RETURNED` record: a committed critique or
   finding proves the critic was cast or the researcher dispatched.
 - `run-smoke.sh [workdir]` builds the fixture, loads the plugin from this
-  checkout with `--plugin-dir`, drives the scripted human turns over
-  `claude -p --resume`, tees the transcript, and runs the checks. It skips
-  (exit 0) when `claude` is not on `PATH`.
+  checkout with `--plugin-dir`, disables any user-scope install of the same
+  plugin for the session (see Hermeticity below), drives the scripted human
+  turns over `claude -p --resume` with `--output-format stream-json
+  --verbose`, extracts the transcript from the full assistant event stream,
+  and runs the checks. It aborts immediately if turn 1 prints `Unknown
+  command` (plugin failed to load) instead of driving six more turns of a
+  plain chat session. It skips (exit 0) when `claude` is not on `PATH`.
+- `extract-assistant-text.mjs` reads a turn's stream-json event log from
+  stdin and writes the text of every assistant message to stdout, in order.
+  This is what lets the transcript capture protocol markers emitted ahead of
+  a mid-turn tool call, not only each turn's final message.
+- `build-hermetic-settings.mjs` reads `claude plugin list --json` from stdin
+  and writes a `--settings` file that disables every installed plugin
+  literally named `pdlc-define`, regardless of which marketplace nickname it
+  was installed under, so the checkout loaded by `--plugin-dir` always wins.
 - `sample-transcript.md` is a recorded passing run, path-scrubbed, kept as
   durable evidence for reviewers who do not want to spend a live model run.
+
+## Hermeticity
+
+A user-scope install of pdlc-define otherwise wins over `--plugin-dir` and
+can silently shadow this checkout with a stale version, so the command in
+turn 1 either fails outright or resolves to the wrong plugin version.
+`run-smoke.sh` builds a per-run `--settings` file (via
+`build-hermetic-settings.mjs`) that disables any such install for the
+session, so the checkout is what actually runs regardless of what else is
+installed on the machine.
 
 ## Harness portability
 
