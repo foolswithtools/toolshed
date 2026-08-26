@@ -16,6 +16,13 @@ That works *because* the issue body carries the why, the file:line anchors, the 
 
 ## Register B - kickoff file (multi-phase feature or extra context)
 
+The flow line below (brainstorming → writing-plans → subagent-driven development →
+finishing-a-development-branch) names skills this plugin does not ship; it assumes a
+separate, already-installed planning skill family. If that family isn't installed,
+either drop the flow line and run this plugin's own lifecycle instead (the
+issue-driven-development skill, steps 4-6: kick off, execute, review), or use
+Register A when the issue is self-contained enough for it.
+
 Save as `docs/context/<YYYY-MM-DD>-<feature>-KICKOFF-PROMPT.md` next to a verified `-context.md`, or paste directly:
 
 ---

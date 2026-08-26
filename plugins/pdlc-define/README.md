@@ -97,7 +97,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/pattern-config.mjs show --repo /path/to/repo
 node ${CLAUDE_PLUGIN_ROOT}/scripts/lint-issue.mjs body.md --genre feature --repo /path/to/repo
 ```
 
-The `bootstrap` genre covers issue zero of an empty repo, where there is no code to anchor into: all-`New:` integration points are legal (no `file:line` anchor required, at least one `New:` path mandatory), and the first acceptance criterion must be a `Shippable main:` bullet defining what shippable means for that repo before anything exists. See Genre 3 in `prompts/github-issue-template.md`.
+The `bootstrap` genre covers issue zero of an empty repo, where there is no code to anchor into: all-`New:` integration points are legal (no `file:line` anchor required, at least one `New:` path mandatory), and the first acceptance criterion must be a `Shippable main:` bullet defining what shippable means for that repo before anything exists. See Genre 3 in `prompts/github-issue-template.md`. A bootstrap (or any genre's) spec anchor still has to resolve to a real file under `--repo`/`--plan-root`; write the spec before linting the issue, not after.
+
+A body may also declare its own genre with a `Genre: <name>` line before the first section heading; this wins over `--genre` when both are given, so a draft body is self-describing without the caller having to know which genre it is.
 
 Exit 0 when clean; exit 1 with a readable finding list otherwise. It requires only `node`, no dependencies. The schema is data (`scripts/schema.json`); point `--config` at a copy to adapt section names, title grammar, or banned phrases to your repo. The linter's own suite lives at `scripts/tests/run-tests.sh`; it must pass before any linter or schema change ships.
 
@@ -195,4 +197,8 @@ today, and none of the above is a timeline commitment.
 
 - Extracted from a five-month production project (2026) by analyzing session transcripts, git history, issue and PR history, and the project's goal-prompt corpus. The claims in the skills reflect observed practice in that project, not aspiration.
 - The originating project did not use GitHub issues from day one; early work carried its specs in docs or PR bodies. The invariant was always "every unit of work has a written, self-contained spec"; these templates encode the mature form.
-- The skills are distilled from observed practice but have not been pressure-tested on fresh agents per the superpowers:writing-skills TDD cycle. Test before treating them as bulletproof.
+- The skills are distilled from observed practice. Cold-start tested 2026-08-26: a fresh session with only this plugin installed (no other project context) ran `/pattern-init` on an empty repo, authored a bootstrap-genre issue from the shipped templates alone, passed the shipped linter and the `/kickoff` preflight on the first try with zero human edits to the issue body, and executed the issue in a TDD loop (RED observed, GREEN observed, mutation-verified) to a green, committed test suite with no mid-run coaching (toolshed#19). Accepted limitations that run surfaced, not yet folded into the plugin:
+  - `/pattern-init` seeds `.pattern-config.json` with npm-shaped `gate_commands` before any deliverable or stack is chosen; a repo whose first deliverable isn't Node.js has to notice and edit the config itself.
+  - `/author-issues` is built to hand a goal-prompt to a *separate* fresh session ("it writes no implementation code"); a single session that both authors and executes an issue has to bypass the command and apply `prompts/github-issue-template.md` directly instead.
+  - There is no documented home for an issue body in a repo with no GitHub remote; `docs/known-issues/` is scoped to bug write-ups with regression tests, not general issue bodies.
+  - `/kickoff` Register A's one-liner and stop condition assume a GitHub issue number and a CI-gated PR, with no documented fallback stop condition for local, remote-less work.
