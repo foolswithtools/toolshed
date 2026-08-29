@@ -32,7 +32,8 @@ gate between a captured observation and a shared standard, so it is deliberate.
 5. Run the guardrails before finishing:
    - `bash scripts/check-no-anthropic-remotion-claim.sh`
    - `python3 -m json.tool` on every JSON file touched.
-   - Re-read every new or edited Markdown file asking: does this imply Anthropic
-     uses Remotion? Keep the words apart if both appear.
+   - Re-read every new or edited Markdown file against the cross-claim rule
+     stated in the toolshed CLAUDE.md, keeping the two forbidden terms far
+     apart if both must appear.
 
 6. Show the diff and let the user commit. Do not commit for them unless they ask.
