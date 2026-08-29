@@ -1,0 +1,11 @@
+{
+  "name": "toolsmith",
+  "version": "0.1.0",
+  "description": "Capture a repeatable process from the current Claude Code session into a reusable, staged skill with your approval (/crystallize), list existing toolshed tools at session start, and print a mechanical reminder at session end so a substantial session is not lost.",
+  "author": {
+    "name": "foolswithtools",
+    "email": "claudet@ohnobono.com"
+  },
+  "homepage": "https://github.com/foolswithtools/toolshed",
+  "license": "MIT"
+}

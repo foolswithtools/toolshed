@@ -27,6 +27,11 @@
       "name": "music-grab",
       "source": "./plugins/music-grab",
       "description": "Grab just the audio from a YouTube / SoundCloud / direct URL via yt-dlp, save it under your project's music folder, and append a CREDITS.md entry recording the source URL, license evidence found in the source page description, and any attribution requirements. Warn-and-proceed on missing license language — the user owns final license verification."
+    },
+    {
+      "name": "toolsmith",
+      "source": "./plugins/toolsmith",
+      "description": "Turn a repeatable process from a session into a reusable, staged skill with your approval (/crystallize), surface existing toolshed tools at session start, and get a mechanical reminder at session end. Manual trigger, per-proposal approval, staging-first before any commit, default-on secret redaction."
     }
   ]
 }
