@@ -9,7 +9,8 @@ trap 'rm -rf "$tmp"' EXIT
 short_t="$tmp/short.jsonl"
 printf '%s\n' '{"type":"user","message":{"content":"one two three four five"}}' \
               '{"type":"assistant","message":{"content":"six seven eight nine ten eleven twelve"}}' > "$short_t"
-out_short="$(printf '{"transcript_path":"%s"}' "$short_t" | bash "$script")"
+out_short="$(printf '{"transcript_path":"%s"}' "$short_t" | bash "$script")"; rc=$?
+[ "$rc" -eq 0 ] || { echo "FAIL: nonzero exit ($rc) below threshold"; exit 1; }
 [ -z "$out_short" ] || { echo "FAIL: fired below threshold"; exit 1; }
 
 # A transcript with >1000 words: should fire.
@@ -21,11 +22,18 @@ path, words = sys.argv[1], sys.argv[2]
 with open(path, "w") as fh:
     fh.write(json.dumps({"type":"assistant","message":{"content":words}}) + "\n")
 PY
-out_long="$(printf '{"transcript_path":"%s"}' "$long_t" | bash "$script")"
+out_long="$(printf '{"transcript_path":"%s"}' "$long_t" | bash "$script")"; rc=$?
+[ "$rc" -eq 0 ] || { echo "FAIL: nonzero exit ($rc) above threshold"; exit 1; }
 echo "$out_long" | grep -q "crystallize" || { echo "FAIL: did not fire above threshold"; exit 1; }
 
 # Missing transcript: silent, exit 0.
-out_missing="$(printf '{"transcript_path":"%s/nope.jsonl"}' "$tmp" | bash "$script")"
+out_missing="$(printf '{"transcript_path":"%s/nope.jsonl"}' "$tmp" | bash "$script")"; rc=$?
+[ "$rc" -eq 0 ] || { echo "FAIL: nonzero exit ($rc) on missing transcript"; exit 1; }
 [ -z "$out_missing" ] || { echo "FAIL: output on missing transcript"; exit 1; }
+
+# Malformed JSON on stdin: silent, exit 0.
+out_malformed="$(printf '{"broken' | bash "$script")"; rc=$?
+[ "$rc" -eq 0 ] || { echo "FAIL: nonzero exit ($rc) on malformed JSON"; exit 1; }
+[ -z "$out_malformed" ] || { echo "FAIL: output on malformed JSON"; exit 1; }
 
 echo "PASS"
