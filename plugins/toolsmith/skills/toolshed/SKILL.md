@@ -13,7 +13,7 @@ List the tools already available so the user can reuse instead of rebuild.
 
 1. Run the enumerator from the plugin root:
 
-   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/list-toolshed.sh" .`
+   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/list-toolshed.sh"`
 
 2. Present the result as a short list, grouped if long. For each tool give its
    name and its one-line description.

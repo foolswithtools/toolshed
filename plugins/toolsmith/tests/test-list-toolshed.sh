@@ -26,4 +26,8 @@ empty="$(mktemp -d)"
 bash "$script" "$empty" >/dev/null || { echo "FAIL: nonzero on empty"; exit 1; }
 rm -rf "$empty"
 
+# Default root (no arg) resolves to the marketplace root via the script's own path.
+out_default="$(bash "$script")"
+echo "$out_default" | grep -q "crystallize" || { echo "FAIL: default root did not find toolsmith skills"; exit 1; }
+
 echo "PASS"

@@ -3,7 +3,11 @@
 # Usage: list-toolshed.sh [root]   (root defaults to current dir)
 # bash 3.2 compatible: no mapfile, no associative arrays.
 set -u
-root="${1:-.}"
+if [ -n "${1:-}" ]; then
+  root="$1"
+else
+  root="$(cd "$(dirname "$0")/../../.." 2>/dev/null && pwd || echo .)"
+fi
 
 # Find every plugin skill manifest under the root.
 find "$root" -type f -path '*/plugins/*/skills/*/SKILL.md' 2>/dev/null | sort | while IFS= read -r f; do
