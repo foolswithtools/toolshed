@@ -14,7 +14,7 @@
 
 - **No em-dashes** in any committed file. Use commas, colons, periods, or parentheses. (Repo CLAUDE.md.)
 - **No AI-tell vocabulary or rhetorical tics** in committed prose. (Repo CLAUDE.md.)
-- **Anthropic/Remotion guardrail:** no committed file may place bare "anthropic" near bare "remotion". Run `bash scripts/check-no-anthropic-remotion-claim.sh` before finishing. Safe tokens (`anthropic-brand`, `remotion-video`, etc.) are exempt.
+- **Cross-claim guardrail (`check-no-anthropic-remotion-claim`):** no committed file may place the two forbidden bare terms within 3 lines of each other. Run `bash scripts/check-no-anthropic-remotion-claim.sh` before finishing. Safe tokens (`anthropic-brand`, `remotion-video`, etc.) are exempt. The rule is stated in the toolshed CLAUDE.md.
 - **Skill naming rules (Anthropic public guidance):** skill `name` is lowercase-hyphen, gerund-preferred, no `anthropic`/`claude` in the name, no vague `helper`/`utils`. `description` is third person, states what it does and when to use it, key use case first.
 - **Bash target is macOS bash 3.2:** no `mapfile`/`readarray`, no associative arrays. Use POSIX loops.
 - **One job per plugin.** Mirror the shape of `plugins/youtube-transcript/`.
@@ -647,8 +647,8 @@ gate between a captured observation and a shared standard, so it is deliberate.
 5. Run the guardrails before finishing:
    - `bash scripts/check-no-anthropic-remotion-claim.sh`
    - `python3 -m json.tool` on every JSON file touched.
-   - Re-read every new or edited Markdown file asking: does this imply Anthropic
-     uses Remotion? Keep the words apart if both appear.
+   - Re-read every new or edited Markdown file against the cross-claim rule in
+     the toolshed CLAUDE.md (keep the two forbidden terms far apart if both must appear).
 
 6. Show the diff and let the user commit. Do not commit for them unless they ask.
 ```
@@ -727,7 +727,7 @@ Expected: exit 0. Note: if the script errors with `mapfile: command not found` (
 
 - [ ] **Step 5: Re-read the Markdown lens**
 
-Re-read every new Markdown file (`README.md` and the three `SKILL.md` files) asking: does anything imply Anthropic uses Remotion? Confirm no bare "anthropic" sits near bare "remotion".
+Re-read every new Markdown file (`README.md` and the three `SKILL.md` files) against the cross-claim rule in the toolshed CLAUDE.md. Confirm the two forbidden bare terms never sit within 3 lines of each other.
 
 - [ ] **Step 6: Commit**
 
