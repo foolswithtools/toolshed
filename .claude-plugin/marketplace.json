@@ -42,6 +42,11 @@
       "name": "pdlc-build",
       "source": "./plugins/pdlc-build",
       "description": "The build-phase companion to a running factory: hand a GitHub issue to factory as a run, read a run's verdict honestly without collapsing its two scores, triage an escalation into a fixed issue, and check credits before and after. Four operator commands, dual-harness (Claude Code and pi) from one shared core."
+    },
+    {
+      "name": "toolsmith",
+      "source": "./plugins/toolsmith",
+      "description": "Turn a repeatable process from a session into a reusable, staged skill with your approval (/crystallize), surface existing toolshed tools at session start, and get a mechanical reminder at session end. Manual trigger, per-proposal approval, staging-first before any commit, default-on secret redaction."
     }
   ]
 }
